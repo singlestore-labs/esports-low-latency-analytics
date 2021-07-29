@@ -1,2 +1,4 @@
-data/replays
-data/replay_packs
+/data/replays
+/data/replay_packs
+/.env
+__debug_bin

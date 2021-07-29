@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+#####################################################################
+#
+# Run ./tasks help for a list of available tasks
+#
+#####################################################################
+
+# Enable shell strict mode
+set -euo pipefail
+
+# source environment variables from local env file if it exists
+ENV_FILE=".env"
+if [[ -f "${ENV_FILE}" ]]; then
+    source "${ENV_FILE}"
+fi
+
+SINGLESTORE_LICENSE="${SINGLESTORE_LICENSE:-}"
+
+# prompt the user for license key if it's not provided in a environment variable
+if [[ -z "${SINGLESTORE_LICENSE}" ]]; then
+    # prompt the user until they enter a valid license key
+    while [[ -z "${SINGLESTORE_LICENSE}" ]]; do
+        echo "SINGLESTORE_LICENSE environment variable not found"
+        echo "You can get a free SingleStore license key from https://portal.singlestore.com/"
+        echo "Please enter your SingleStore license key:"
+        read SINGLESTORE_LICENSE
+    done
+
+    # save the license key to the environment file for future use
+    echo "export SINGLESTORE_LICENSE='${SINGLESTORE_LICENSE}'" >>"${ENV_FILE}"
+fi
+
+help() {
+    cat <<EOF
+Usage: ./tasks <task> [<args>]
+
+tasks:
+    up:                     (re)start all containers
+    down:                   stop all containers
+    status:                 show status of containers
+    logs [SERVICE]:         show logs of a service
+    storage:                (re)start singlestore
+    processor:              (re)start processor
+    stop-processor:         stop processor
+    sql:                    run an interactive sql client
+    sql-reset:              reset the database (warning will delete everything)
+EOF
+}
+
+status() {
+    docker-compose ps
+}
+
+sql() {
+    mysql -h 127.0.0.1 -uroot -proot "${@:-sc2}"
+}
+
+sql-reset() {
+    sql information_schema <schema.sql
+}
+
+logs() {
+    local service=${1:-}
+    docker-compose logs --tail 100 -f ${service}
+}
+
+storage() {
+    docker-compose rm -fsv singlestore
+    docker-compose up -d singlestore
+}
+
+processor() {
+    docker-compose rm -fsv processor
+    docker-compose up --build -d processor
+    docker-compose logs --tail=10 processor
+}
+
+stop-processor() {
+    docker-compose rm -fsv processor
+}
+
+down() {
+    docker-compose down -v
+}
+
+up() {
+    down
+    storage
+    processor
+    status
+}
+
+type ${1:-help} >/dev/null 2>&1 || {
+    echo "Unknown command: ${1:-help}"
+    echo
+    help
+    exit 1
+}
+
+"${@:-help}"
