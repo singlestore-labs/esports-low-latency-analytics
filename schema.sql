@@ -30,7 +30,8 @@ CREATE TABLE players (
     apm DOUBLE NOT NULL,
     result TEXT NOT NULL,
 
-    PRIMARY KEY (gameID, playerID)
+    PRIMARY KEY (gameID, playerID),
+    SORT KEY (gameID, playerID)
 );
 
 CREATE TABLE playerstats (
@@ -51,6 +52,29 @@ CREATE TABLE buildcomp (
     kind TEXT NOT NULL COLLATE "utf8_bin",
     num INT NOT NULL,
 
-    SORT KEY (gameID, loopID),
+    SORT KEY (gameID, playerID, loopID),
     SHARD (gameID, playerID)
 );
+
+CREATE TABLE compvecs (
+    gameID BIGINT NOT NULL,
+    playerID INT NOT NULL,
+    race TEXT NOT NULL,
+    opponentRace TEXT NOT NULL,
+    loopID BIGINT NOT NULL,
+    vec LONGBLOB NOT NULL,
+
+    SORT KEY (gameID, playerID),
+    SHARD (gameID, playerID),
+
+    KEY (race, opponentRace)
+);
+
+/*
+-- quickly create a new version of a table
+create table temp (
+);
+insert into temp select * from compvecs;
+drop table compvecs;
+alter table temp rename to compvecs;
+*/
