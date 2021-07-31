@@ -6,11 +6,23 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/processor/bin/processor",
+            "program": "${workspaceFolder}/src/bin/processor",
+            "cwd": "${workspaceFolder}",
             "args": [
                 "--config",
-                "${workspaceFolder}/processor/config-local.toml",
-                "${workspaceFolder}/data/replays"
+                "${workspaceFolder}/src/config-processor-local.toml"
+            ]
+        },
+        {
+            "name": "Run replay player",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/src/bin/player",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--config",
+                "${workspaceFolder}/src/config-player-local.toml"
             ]
         }
     ]

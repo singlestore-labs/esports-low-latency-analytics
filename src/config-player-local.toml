@@ -1,0 +1,15 @@
+verbose = 0
+
+replayDir = "data/replays"
+
+port = 8000
+
+ginMode = "debug"
+# ginMode = "release"
+
+[singlestore]
+host = "127.0.0.1"
+port = 3306
+username = "root"
+password = "root"
+database = "sc2"

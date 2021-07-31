@@ -1,4 +1,4 @@
-package processor
+package src
 
 import (
 	"log"
@@ -6,16 +6,17 @@ import (
 	"github.com/hamba/avro"
 )
 
-type Env struct {
-	WorkerID int
-	DB       *Singlestore
-	Verbose  int
+type ProcessorEnv struct {
+	WorkerID  int
+	DB        *Singlestore
+	Verbose   int
+	ReplayDir string
 
 	PlayerStatsSchema avro.Schema
 	BuildCompSchema   avro.Schema
 }
 
-func NewEnv(workerID int, config *Config, db *Singlestore) *Env {
+func NewProcessorEnv(workerID int, config *ProcessorConfig, db *Singlestore) *ProcessorEnv {
 	statsSchema, err := AvroSchemaFromStruct(&PlayerStats{})
 	if err != nil {
 		log.Fatalf("failed to convert PlayerStats to avro schema: %s", err)
@@ -25,10 +26,11 @@ func NewEnv(workerID int, config *Config, db *Singlestore) *Env {
 		log.Fatalf("failed to convert BuildCompChange to avro schema: %s", err)
 	}
 
-	return &Env{
-		WorkerID: workerID,
-		DB:       db,
-		Verbose:  config.Verbose,
+	return &ProcessorEnv{
+		WorkerID:  workerID,
+		DB:        db,
+		Verbose:   config.Verbose,
+		ReplayDir: config.ReplayDir,
 
 		PlayerStatsSchema: statsSchema,
 		BuildCompSchema:   buildCompSchema,

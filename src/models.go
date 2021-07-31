@@ -1,4 +1,4 @@
-package processor
+package src
 
 type PlayerStats struct {
 	GameID   int64

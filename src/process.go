@@ -1,10 +1,11 @@
-package processor
+package src
 
 import (
 	"crypto/sha256"
 	"encoding/binary"
 	"html"
 	"log"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -45,7 +46,7 @@ func gameIDFromFileName(fileName string) int64 {
 	return int64(binary.BigEndian.Uint64(data[:8]))
 }
 
-func Run(env *Env, filename string) error {
+func Run(env *ProcessorEnv, filename string) error {
 	replay, err := rep.NewFromFile(filename)
 	if err != nil {
 		return err
@@ -56,13 +57,14 @@ func Run(env *Env, filename string) error {
 		return nil
 	}
 
-	gameID := gameIDFromFileName(filename)
+	cleanFilename := strings.TrimPrefix(filename, env.ReplayDir+"/")
+	gameID := gameIDFromFileName(cleanFilename)
 
 	_, err = sq.
 		Replace("games").
 		SetMap(map[string]interface{}{
 			"gameID":      gameID,
-			"filename":    filename,
+			"filename":    cleanFilename,
 			"ts":          replay.Details.TimeUTC(),
 			"loops":       replay.Header.Loops(),
 			"durationSec": replay.Metadata.DurationSec(),

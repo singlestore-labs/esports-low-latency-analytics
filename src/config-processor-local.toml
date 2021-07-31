@@ -1,5 +1,7 @@
 verbose = 0
 
+replayDir = "data/replays"
+
 [singlestore]
 host = "127.0.0.1"
 port = 3306

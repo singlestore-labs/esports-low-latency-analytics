@@ -17,4 +17,4 @@ ADD https://curl.haxx.se/ca/cacert.pem /etc/pki/tls/certs/ca-bundle.crt
 
 ENTRYPOINT ["./processor", "--config", "config.toml"]
 COPY --from=builder /processor .
-COPY config.toml /config.toml
+COPY config-processor.toml /config.toml

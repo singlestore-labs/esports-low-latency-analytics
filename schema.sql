@@ -70,6 +70,18 @@ CREATE TABLE compvecs (
     KEY (race, opponentRace)
 );
 
+CREATE ROWSTORE TABLE livebuildcomp (
+    gameID BIGINT NOT NULL,
+    playerID INT NOT NULL,
+    loopID BIGINT NOT NULL,
+
+    kind TEXT NOT NULL COLLATE "utf8_bin",
+    num INT NOT NULL,
+
+    KEY (gameID, playerID, loopID),
+    SHARD (gameID, playerID)
+);
+
 /*
 -- quickly create a new version of a table
 create table temp (
