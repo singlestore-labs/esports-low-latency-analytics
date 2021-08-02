@@ -9,6 +9,7 @@ import (
 
 	"src"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,6 +51,11 @@ func main() {
 	}
 
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		MaxAge:          12 * time.Hour,
+	}))
 
 	server := src.NewReplayServer(config, db)
 	server.RegisterRoutes(router)

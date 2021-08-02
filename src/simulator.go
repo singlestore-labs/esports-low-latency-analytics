@@ -2,6 +2,7 @@ package src
 
 import (
 	"log"
+	"sync/atomic"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -12,11 +13,12 @@ type ReplaySimulator struct {
 	GameID    int64
 	Timeline  *Timeline
 	StartLoop int64
+	loop      int64
 	stop      chan struct{}
 }
 
 func StartReplay(db *Singlestore, gameid int64, startloop int64) (*ReplaySimulator, error) {
-	timeline, err := LoadTimeline(db, gameid)
+	timeline, err := LoadTimeline(db, gameid, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -26,12 +28,17 @@ func StartReplay(db *Singlestore, gameid int64, startloop int64) (*ReplaySimulat
 		GameID:    gameid,
 		Timeline:  timeline,
 		StartLoop: startloop,
+		loop:      0,
 		stop:      make(chan struct{}),
 	}
 
 	go sim.Run()
 
 	return sim, nil
+}
+
+func (r *ReplaySimulator) CurrentLoop() int64 {
+	return atomic.LoadInt64(&r.loop)
 }
 
 func (r *ReplaySimulator) Run() {
@@ -50,6 +57,8 @@ func (r *ReplaySimulator) Run() {
 	timer := time.NewTicker(LoopTime(1))
 
 	for loop := int64(0); loop < maxLoopID; loop++ {
+		atomic.StoreInt64(&r.loop, loop)
+
 		// emit events
 		emitBatch := false
 		for {

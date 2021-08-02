@@ -14,6 +14,7 @@ type ProcessorConfig struct {
 type PlayerConfig struct {
 	Verbose     int
 	ReplayDir   string
+	IconDir     string
 	GinMode     string
 	Port        int
 	Singlestore SinglestoreConfig

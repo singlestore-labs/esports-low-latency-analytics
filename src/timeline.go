@@ -5,10 +5,10 @@ import (
 )
 
 type Event struct {
-	PlayerID int
-	LoopID   int64
-	Kind     string
-	Num      int
+	PlayerID int    `json:"playerid"`
+	LoopID   int64  `json:"loopid"`
+	Kind     string `json:"kind"`
+	Num      int    `json:"num"`
 }
 
 type Timeline struct {
@@ -16,15 +16,15 @@ type Timeline struct {
 	Events []Event
 }
 
-func LoadTimeline(db *Singlestore, gameID int64) (*Timeline, error) {
+func LoadTimeline(db *Singlestore, gameID int64, minLoopID int64) (*Timeline, error) {
 	events := make([]Event, 0)
 
 	err := db.Select(&events, `
 		select playerid, loopid, kind, num
 		from buildcomp
-		where gameid = ?
+		where gameid = ? and loopid >= ?
 		order by loopid asc
-	`, gameID)
+	`, gameID, minLoopID)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 verbose = 0
 
 replayDir = "data/replays"
+iconDir = "data/icons"
 
 port = 8000
 
