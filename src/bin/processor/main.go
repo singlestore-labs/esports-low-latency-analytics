@@ -121,4 +121,13 @@ func main() {
 	}
 
 	wg.Wait()
+
+	if err == nil {
+		now := time.Now()
+		log.Printf("starting postprocess() at %s", now)
+		if _, err := db.Exec("CALL postprocess()"); err != nil {
+			log.Fatalf("postprocess() failed: %s", err)
+		}
+		log.Printf("postprocess() finished in %s", time.Since(now))
+	}
 }

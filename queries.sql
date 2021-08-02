@@ -1,5 +1,14 @@
 use sc2;
 
+/*
+-- quickly create a new version of a table
+create table temp (
+);
+insert into temp select * from compvecs;
+drop table compvecs;
+alter table temp rename to compvecs;
+*/
+
 select gameid, substring_index(filename, "/", -1) as name, ts, loops, durationSec/60 as mins, matchup
 from games;
 

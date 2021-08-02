@@ -56,6 +56,10 @@ func Run(env *ProcessorEnv, filename string) error {
 		log.Printf("SKIP: found more than 2 players in replay: %s", filename)
 		return nil
 	}
+	if replay.Header.Loops() >= 57600 {
+		log.Printf("SKIP: replay longer than 1 hour (57600 loops): %s", filename)
+		return nil
+	}
 
 	cleanFilename := strings.TrimPrefix(filename, env.ReplayDir+"/")
 	gameID := gameIDFromFileName(cleanFilename)

@@ -89,7 +89,7 @@ func (s *ReplayServer) ListReplays(c *gin.Context) {
 
 func (s *ReplayServer) StartReplay(c *gin.Context) {
 	params := struct {
-		GameID int64 `form:"gameid"`
+		GameID    int64 `form:"gameid"`
 		StartLoop int64 `form:"startloop"`
 	}{}
 
