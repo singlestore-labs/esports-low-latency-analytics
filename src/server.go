@@ -31,6 +31,7 @@ func (s *ReplayServer) RegisterRoutes(router gin.IRouter) error {
 	router.GET("/api/replays/:gameid/start", s.StartReplay)
 	router.GET("/api/replays/:gameid/stop", s.StopReplay)
 	router.GET("/api/replays/:gameid/timeline", s.GetReplayTimeline)
+	router.GET("/api/replays/:gameid/similar", s.GetSimilarReplays)
 	router.GET("/api/icon/:kind", s.GetIcon)
 	router.GET("/api/replays/active", s.ActiveReplays)
 	return nil
@@ -272,4 +273,48 @@ func (s *ReplayServer) GetReplayTimeline(c *gin.Context) {
 	}
 
 	c.JSON(200, timeline.Events)
+}
+
+type SimilarGamePoint struct {
+	GameID   int64
+	PlayerID int
+	LoopID   int64
+	LoopLag  int64
+}
+
+func (s *ReplayServer) GetSimilarReplays(c *gin.Context) {
+	gameid := c.Param("gameid")
+	if gameid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "gameid is required"})
+		return
+	}
+	gameidInt, err := strconv.ParseInt(gameid, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "gameid must be a bigint"})
+		return
+	}
+
+	params := struct {
+		PlayerID int   `form:"playerid"`
+		LoopID   int64 `form:"loop"`
+		Lag      int64 `form:"lag"`
+		Limit    int   `form:"limit"`
+	}{}
+
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	out := []SimilarGamePoint{}
+	err = s.DB.Select(&out, `
+		select * from similarGamePoints(?, ?, ?, ?, ?);
+	`, gameidInt, params.PlayerID, params.LoopID, params.Lag, params.Limit)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, out)
 }

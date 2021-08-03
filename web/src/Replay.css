@@ -1,0 +1,39 @@
+.Replay {
+    & > .header {
+        margin-left: 80px;
+        padding-left: 20px;
+        border-radius: 3px;
+        background-color: #f9f9f9;
+        color: #333;
+        padding: 10px;
+        height: 23px;
+        font-size: 1.2em;
+        position: relative;
+
+        & > * {
+            margin: 0 10px;
+        }
+
+        & .mapname {
+            font-weight: bold;
+            display: inline-block;
+        }
+        & .player {
+            display: inline-block;
+        }
+
+        & .controls {
+            display: inline-block;
+            margin-left: auto;
+
+            & > .button {
+                display: inline-block;
+                cursor: pointer;
+                margin-right: 10px;
+            }
+            & > .loop {
+                display: inline-block;
+            }
+        }
+    }
+}
