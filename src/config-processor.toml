@@ -1,6 +1,8 @@
 # verbose logging - set to 0 to disable
 verbose = 0
 
+replayDir = "/replays"
+
 [singlestore]
 host = "singlestore"
 port = 3306

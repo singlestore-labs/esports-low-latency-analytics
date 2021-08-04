@@ -16,7 +16,7 @@ services:
       - LICENSE_KEY=${SINGLESTORE_LICENSE}
       - START_AFTER_INIT=Y
   processor:
-    build: processor
+    build: src
     image: processor
     container_name: processor
     command: /replays
