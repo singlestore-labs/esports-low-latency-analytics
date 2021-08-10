@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useInterval } from 'rooks';
 
+import { PlayIcon, StopIcon } from '@heroicons/react/solid';
 import { ReplayMeta, ReplayStatus } from './models';
+import Header from './Header';
 import Timeline from './Timeline';
-
-import './Replay.css';
 
 const Replay: React.FC = () => {
     const { gameid } = useParams<{ gameid: string }>();
@@ -49,52 +49,49 @@ const Replay: React.FC = () => {
     }, []);
 
     const startReplay = () => {
-        fetch(
-            `http://localhost:8000/api/replays/${gameid}/start?startloop=200`
-        ).then(refreshStatus);
+        fetch(`http://localhost:8000/api/replays/${gameid}/start?startloop=200`).then(refreshStatus);
     };
     const stopReplay = () => {
-        fetch(`http://localhost:8000/api/replays/${gameid}/stop`).then(
-            refreshStatus
-        );
+        fetch(`http://localhost:8000/api/replays/${gameid}/stop`).then(refreshStatus);
     };
 
     if (!replay) {
         return <div>Loading...</div>;
     }
 
-    return (
-        <div className="Replay">
-            <div className="header">
-                <div className="mapname">{replay.mapname}</div>
-                <div className="player">
-                    <b>{replay.p1Name}</b> ({replay.p1Race})
-                </div>
-                <div className="player">
-                    <b>{replay.p2Name}</b> ({replay.p2Race})
-                </div>
-                <div className="controls">
-                    {status.active ? (
-                        <div className="button" onClick={stopReplay}>
-                            ⏹️
-                        </div>
-                    ) : (
-                        <div className="button" onClick={startReplay}>
-                            ▶️️
-                        </div>
-                    )}
-                    <div className="loop">{status.loop}</div>
-                </div>
-            </div>
-            <div className="timelines">
-                <Timeline
-                    live
-                    gameID={replay.gameid}
-                    playerID={1}
-                    loop={status.loop || 0}
-                />
-            </div>
+    const HeaderCell = ({ k, children }: { k: React.ReactNode; children: React.ReactNode }) => (
+        <div className="p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider">{k}</div>
+            <div className="truncate">{children}</div>
         </div>
+    );
+
+    return (
+        <>
+            <Header>
+                <div className="flex">
+                    <div className="pr-4 mr-4 border-r-2 border-gray-100">
+                        <HeaderCell k="map">{replay.mapname}</HeaderCell>
+                    </div>
+                    <HeaderCell k={replay.p1Race}>{replay.p1Name}</HeaderCell>
+                    <div className="tracking-wider p-4 self-center text-gray-400">vs</div>
+                    <HeaderCell k={replay.p2Race}>{replay.p2Name}</HeaderCell>
+                </div>
+                <div className="flex px-10">
+                    <div className="self-center mr-2 text-gray-400 h-6 cursor-pointer hover:text-indigo-400">
+                        {status.active ? (
+                            <StopIcon className="h-6 text-gray-400 hover:text-indigo-400" onClick={stopReplay} />
+                        ) : (
+                            <PlayIcon className="h-6 text-gray-400 hover:text-indigo-400" onClick={startReplay} />
+                        )}
+                    </div>
+                    <HeaderCell k="loop">{status.loop || 0}</HeaderCell>
+                </div>
+            </Header>
+            <div className="">
+                <Timeline live gameID={replay.gameid} playerID={1} loop={status.loop || 0} />
+            </div>
+        </>
     );
 };
 

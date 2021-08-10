@@ -1,12 +1,17 @@
 {
   "name": "web",
-  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "version": "1.0.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "serve": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^1.0.3",
+    "@types/lodash": "^4.14.172",
+    "autoprefixer": "^10.3.1",
+    "classnames": "^2.3.1",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-router-dom": "^5.2.0",
@@ -26,13 +31,16 @@
     "postcss": "^8.3.6",
     "postcss-nesting": "^8.0.1",
     "prettier": "^2.3.2",
+    "tailwindcss": "^2.2.7",
     "typescript": "^4.3.2",
     "vite": "^2.4.4"
   },
   "postcss": {
     "map": "inline",
     "plugins": {
-      "postcss-nesting": {}
+      "postcss-nesting": {},
+      "tailwindcss": {},
+      "autoprefixer": {}
     }
   }
 }
