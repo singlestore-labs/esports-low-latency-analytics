@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from 'react';
+import React, { useState, useReducer, memo } from 'react';
 import { useParams } from 'react-router';
 import { useInterval } from 'rooks';
 
@@ -7,13 +7,16 @@ import { ReplayMeta } from './models';
 import Header from './Header';
 import Timeline from './Timeline';
 import { useFetch, formatSeconds } from './util';
+import classNames from 'classnames';
 
 type State = {
     running: boolean;
     loop: number;
+    player: 1 | 2;
 };
 
 type Action =
+    | { type: 'select-player'; player: 1 | 2 }
     | { type: 'start' }
     | { type: 'stop' }
     | { type: 'tick' }
@@ -22,6 +25,11 @@ type Action =
 
 const reduceState = (state: State, action: Action) => {
     switch (action.type) {
+        case 'select-player':
+            return {
+                ...state,
+                player: action.player,
+            };
         case 'start':
             return {
                 ...state,
@@ -29,6 +37,7 @@ const reduceState = (state: State, action: Action) => {
             };
         case 'stop':
             return {
+                ...state,
                 running: false,
                 loop: 0,
             };
@@ -50,6 +59,19 @@ const reduceState = (state: State, action: Action) => {
     }
 };
 
+const HeaderCell = memo(
+    ({
+        k,
+        children,
+        ...props
+    }: { k: React.ReactNode; children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) => (
+        <div className="px-2" {...props}>
+            <div className="text-xs select-none text-gray-500 uppercase tracking-wider">{k}</div>
+            <div className="truncate">{children}</div>
+        </div>
+    )
+);
+
 const Replay: React.FC = () => {
     const { gameid } = useParams<{ gameid: string }>();
 
@@ -59,6 +81,7 @@ const Replay: React.FC = () => {
     const [state, dispatch] = useReducer(reduceState, {
         running: false,
         loop: 0,
+        player: 1,
     });
 
     const [startTick, stopTick] = useInterval(() => dispatch({ type: 'tick' }), 1000 / 16);
@@ -81,13 +104,9 @@ const Replay: React.FC = () => {
     const skipForward = () => {
         dispatch({ type: 'skip', amt: 16 * 15 });
     };
-
-    const HeaderCell = ({ k, children }: { k: React.ReactNode; children: React.ReactNode }) => (
-        <div className="px-2">
-            <div className="text-xs select-none text-gray-500 uppercase tracking-wider">{k}</div>
-            <div className="truncate">{children}</div>
-        </div>
-    );
+    const selectPlayer = (player: 1 | 2) => {
+        dispatch({ type: 'select-player', player });
+    };
 
     if (!replay) {
         return <div>Loading...</div>;
@@ -100,9 +119,31 @@ const Replay: React.FC = () => {
                     <div className="pr-4 mr-4 border-r-2 border-gray-100">
                         <HeaderCell k="map">{replay.mapname}</HeaderCell>
                     </div>
-                    <HeaderCell k={replay.p1Race}>{replay.p1Name}</HeaderCell>
+                    <HeaderCell
+                        k={replay.p1Race}
+                        className={classNames(
+                            'cursor-pointer border border-transparent rounded px-2 py-0.5 hover:border-indigo-400',
+                            {
+                                'bg-indigo-200': state.player === 1,
+                            }
+                        )}
+                        onClick={() => selectPlayer(1)}
+                    >
+                        {replay.p1Name}
+                    </HeaderCell>
                     <div className="select-none tracking-wider px-4 self-center text-gray-400">vs</div>
-                    <HeaderCell k={replay.p2Race}>{replay.p2Name}</HeaderCell>
+                    <HeaderCell
+                        k={replay.p2Race}
+                        className={classNames(
+                            'cursor-pointer border border-transparent rounded px-2 py-0.5 hover:border-indigo-400',
+                            {
+                                'bg-indigo-200': state.player === 2,
+                            }
+                        )}
+                        onClick={() => selectPlayer(2)}
+                    >
+                        {replay.p2Name}
+                    </HeaderCell>
                 </div>
                 <div className="flex px-10">
                     <div className="self-center mr-2 text-gray-400 h-6 cursor-pointer hover:text-indigo-400">
@@ -123,9 +164,9 @@ const Replay: React.FC = () => {
                     </HeaderCell>
                 </div>
             </Header>
-            <div className="">
-                <Timeline live gameID={replay.gameid} player={1} loop={state.loop || 0} />
-                <Timeline gameID={replay.gameid} player={2} loop={state.loop || 0} />
+            <div className="grid gap-10">
+                <Timeline live gameID={replay.gameid} player={state.player} loop={state.loop || 0} />
+                <Timeline gameID={replay.gameid} player={state.player === 1 ? 2 : 1} loop={state.loop || 0} />
             </div>
         </>
     );

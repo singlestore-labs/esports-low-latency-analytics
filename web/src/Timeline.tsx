@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { useDimensionsRef } from 'rooks';
 import classnames from 'classnames';
 
-import { scaleSymlog, scaleLinear, scaleQuantize } from 'd3-scale';
+import { scaleSymlog } from 'd3-scale';
 import * as d3array from 'd3-array';
 
 import { Event } from './models';
@@ -43,9 +43,8 @@ const Timeline: React.FC<Props> = (props: Props) => {
 
     const [ref, dimensions] = useDimensionsRef({ updateOnScroll: false, updateOnResize: true });
     const width = dimensions?.width || 0;
-    const height = dimensions?.height || 0;
 
-    const loopRadius = loopsPerMinute * (width > 2000 ? 2 : 1);
+    const loopRadius = loopsPerMinute * (width > 2000 ? 4 : 2);
     const minLoop = props.loop - loopRadius;
     const maxLoop = props.loop + loopRadius;
 
@@ -53,8 +52,6 @@ const Timeline: React.FC<Props> = (props: Props) => {
         .constant(10 ** 3)
         .domain([-loopRadius, loopRadius])
         .range([0, width]);
-
-    const yAxis = scaleLinear().domain([10, -10]).range([0, height]);
 
     const bisector = d3array.bisector((e: Event) => e.loopid);
     const startIndex = bisector.left(events[props.player - 1], minLoop);
@@ -87,59 +84,50 @@ const Timeline: React.FC<Props> = (props: Props) => {
         const padding = 15;
         const sectionHeight = timelineHeight / 2 - padding;
 
-        const sections = kindsBySection.map(([section, kinds], i, arr) => {
-            const objWidth = kinds.length * binWidth > sectionHeight ? (1 / kinds.length) * sectionHeight : binWidth;
-            if (objWidth < 15) {
-                return null;
-            }
+        const sections = kindsBySection
+            .sort(([section]) => (section === 'top' ? -1 : 1))
+            .map(([section, kinds]) => {
+                const objWidth =
+                    kinds.length * binWidth > sectionHeight ? (1 / kinds.length) * sectionHeight : binWidth;
 
-            const kindsRendered = kinds.map(([kind, count]) => (
-                <div key={kind} className="relative transform" style={{ maxWidth: objWidth }}>
-                    <img src={`http://localhost:8000/api/icon/${kind}`} title={kind} />
-                    {Math.abs(count) === 1 ? undefined : (
-                        <div
-                            className={classnames(
-                                'absolute -bottom-0.5 -right-0.5 justify-center px-0.5 py-0.5',
-                                'tracking-tighter text-xs font-bold leading-none rounded-full select-none bg-opacity-70 pointer-events-none',
-                                {
-                                    'text-red-100 bg-red-600': count < 0,
-                                    'text-green-100 bg-green-600': count > 0,
-                                }
-                            )}
-                        >
-                            {count}
-                        </div>
-                    )}
-                </div>
-            ));
+                const kindsRendered = kinds.map(([kind, count]) => (
+                    <div key={kind} className="relative" style={{ maxWidth: objWidth }}>
+                        <img src={`http://localhost:8000/api/icon/${kind}`} title={kind} />
+                        {Math.abs(count) === 1 ? undefined : (
+                            <div
+                                className={classnames(
+                                    'absolute -bottom-0.5 -right-0.5 justify-center px-0.5 py-0.5',
+                                    'tracking-tighter text-xs font-bold leading-none rounded-full select-none bg-opacity-70 pointer-events-none',
+                                    {
+                                        'text-red-100 bg-red-600': count < 0,
+                                        'text-green-100 bg-green-600': count > 0,
+                                    }
+                                )}
+                            >
+                                {count}
+                            </div>
+                        )}
+                    </div>
+                ));
 
-            if (section === 'top') {
                 return (
                     <div
                         key={section}
-                        className="flex flex-col-reverse absolute top-0 rounded-full bg-gradient-to-t from-green-100 to-transparent"
-                        style={{ height: sectionHeight }}
+                        className={classnames('absolute flex rounded-full bg-gradient-to-t', {
+                            'top-0 flex-col-reverse from-green-100 to-transparent': section === 'top',
+                            'bottom-0 flex-col from-transparent to-red-100': section === 'bottom',
+                        })}
+                        style={{ height: sectionHeight, marginTop: section === 'bottom' ? padding * 2 : 0 }}
                     >
                         {kindsRendered}
                     </div>
                 );
-            } else if (section === 'bottom') {
-                return (
-                    <div
-                        key={section}
-                        className="flex flex-col absolute bottom-0 rounded-full bg-gradient-to-b from-red-100 to-transparent"
-                        style={{ height: sectionHeight, marginTop: padding * 2 }}
-                    >
-                        {kindsRendered}
-                    </div>
-                );
-            }
-        });
+            });
 
         return (
             <div
                 key={maxLoop}
-                className="absolute transition-transform duration-75 ease-linear transform"
+                className="absolute transition-transform duration-75 ease-linear transform flex flex-col items-center"
                 style={{ width: binWidth, height: timelineHeight, ['--tw-translate-x' as any]: `${left}px`, zIndex }}
             >
                 {sections}

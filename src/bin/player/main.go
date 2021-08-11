@@ -10,6 +10,7 @@ import (
 	"src"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -56,6 +57,7 @@ func main() {
 		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		MaxAge:          12 * time.Hour,
 	}))
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	server := src.NewReplayServer(config, db)
 	server.RegisterRoutes(router)
