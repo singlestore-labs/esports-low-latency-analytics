@@ -23,7 +23,7 @@ func LoadTimeline(db *Singlestore, gameID int64, minLoopID int64) (*Timeline, er
 		select playerid, loopid, kind, num
 		from buildcomp
 		where gameid = ? and loopid >= ?
-		order by loopid asc
+		order by loopid asc, kind
 	`, gameID, minLoopID)
 	if err != nil {
 		return nil, err

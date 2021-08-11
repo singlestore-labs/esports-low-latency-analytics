@@ -10,11 +10,6 @@ export type ReplayMeta = {
     p2Result: string;
 };
 
-export type ReplayStatus = {
-    active: boolean;
-    loop: number;
-};
-
 export type Event = {
     playerid: number;
     loopid: number;

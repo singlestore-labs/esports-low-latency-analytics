@@ -9,9 +9,12 @@
   },
   "dependencies": {
     "@heroicons/react": "^1.0.3",
-    "@types/lodash": "^4.14.172",
     "autoprefixer": "^10.3.1",
     "classnames": "^2.3.1",
+    "d3-array": "^3.0.1",
+    "d3-format": "^3.0.1",
+    "d3-scale": "^4.0.0",
+    "d3-shape": "^3.0.1",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-router-dom": "^5.2.0",
@@ -19,6 +22,10 @@
     "use-react-router-breadcrumbs": "^2.0.2"
   },
   "devDependencies": {
+    "@types/d3-array": "^3.0.1",
+    "@types/d3-format": "^3.0.1",
+    "@types/d3-scale": "^4.0.1",
+    "@types/d3-shape": "^3.0.2",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@types/react-router-dom": "^5.1.8",

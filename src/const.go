@@ -123,5 +123,5 @@ const (
 
 var (
 	// IgnoreUnitTypeRe is a regex which matches unit types which should be ignored
-	IgnoreUnitTypeRe = regexp.MustCompile(`^(Beacon|RewardDance|Spray|LoadOutSpray|GameHeartActive|InvisibleTargetDummy)`)
+	IgnoreUnitTypeRe = regexp.MustCompile(`^(Beacon|RewardDance|Spray|LoadOutSpray|GameHeartActive|InvisibleTargetDummy|Larva|Egg|CreepTumor)`)
 )

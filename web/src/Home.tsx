@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import Header from './Header';
 import { ReplayMeta } from './models';
+import { useFetch } from './util';
 
 const Spinner = (
     <div className="col-span-full justify-self-center my-10">
@@ -55,15 +56,11 @@ const Replay = ({ replay }: { replay: ReplayMeta }) => {
     );
 };
 
+// TODO: add search and filtering
+
 const Home: React.FC = () => {
     const [replays, setReplays] = useState<Array<ReplayMeta>>([]);
-
-    // TODO: add search and filtering
-    useEffect(() => {
-        fetch('http://localhost:8000/api/replays')
-            .then((response) => response.json())
-            .then(setReplays);
-    }, []);
+    useFetch('api/replays', setReplays);
 
     return (
         <>
