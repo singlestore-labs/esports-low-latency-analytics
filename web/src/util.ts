@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useQuery } from 'react-query';
 
 export type WithChildren<T = unknown> = T & { children?: React.ReactNode };
 
@@ -29,32 +30,31 @@ export function* mapped<T, X>(xs: Iterable<T>, f: (x: T, i: number) => X): Gener
     }
 }
 
-export const useFetch = <T>(path: string, success: (_: T) => unknown): void => {
+export const useFetch = <T, X=unknown>(path: string, transform?: (d: X) => T): T | undefined => {
     const url = `http://localhost:8000/${path}`;
 
-    useEffect(() => {
-        let didCancel = false;
-
-        (async () => {
+    const { data } = useQuery(
+        `${path}-${transform ? 'transformed' : 'raw'}`,
+        async () => {
             const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
-                if (!didCancel) {
-                    success(data);
-                }
+                return transform ? transform(data) : data;
             } else {
-                console.error(await response.text());
+                throw new Error(`Failed to fetch ${url}: ${await response.text()}`);
             }
-        })();
+        },
+        {
+            cacheTime: 1000 * 60,
+            staleTime: Infinity,
+        }
+    );
 
-        return () => {
-            didCancel = true;
-        };
-    }, [path]);
+    return data;
 };
 
 export const formatSeconds = (seconds: number, signed = false) => {
-    const sign = signed ? seconds < 0 ? '-' : '+' : '';
+    const sign = signed ? (seconds < 0 ? '-' : '+') : '';
     const abs = Math.abs(seconds);
     if (abs > 60) {
         const mins = Math.floor(abs / 60);

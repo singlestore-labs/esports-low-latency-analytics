@@ -35,6 +35,7 @@ type ReplayMeta struct {
 	GameID   string `json:"gameid"`
 	Filename string `json:"filename"`
 	Mapname  string `json:"mapname"`
+	Loops    int64  `json:"loops"`
 	P1Name   string `json:"p1Name"`
 	P1Race   string `json:"p1Race"`
 	P1Result string `json:"p1Result"`
@@ -73,7 +74,7 @@ func (s *ReplayServer) GetReplay(c *gin.Context) {
 	out := &ReplayMeta{}
 	err = s.DB.Get(out, `
 		select
-			games.gameid, games.filename, games.mapname,
+			games.gameid, games.filename, games.mapname, games.loops,
 			p1.name p1name, p1.race p1race, p1.result p1result,
 			p2.name p2name, p2.race p2race, p2.result p2result
 		from games, players p1, players p2
@@ -173,10 +174,9 @@ func (s *ReplayServer) GetReplayTimeline(c *gin.Context) {
 }
 
 type SimilarGamePoint struct {
-	GameID   int64
-	PlayerID int
-	LoopID   int64
-	LoopLag  int64
+	GameID   string `json:"gameid"`
+	PlayerID int    `json:"playerid"`
+	LoopID   int64  `json:"loop"`
 }
 
 func (s *ReplayServer) GetSimilarReplays(c *gin.Context) {
@@ -198,13 +198,33 @@ func (s *ReplayServer) GetSimilarReplays(c *gin.Context) {
 		return
 	}
 
-	out := []SimilarGamePoint{}
-	err = s.DB.Select(&out, `
-		select * from similarGamePoints(?, ?, ?, ?, ?);
-	`, gameid, params.PlayerID, params.LoopID, params.Lag, params.Limit)
+	playerInfo := struct {
+		Race         string
+		OpponentRace string
+	}{}
+
+	err = s.DB.Get(&playerInfo, `
+		select race, opponentrace
+		from players
+		where gameID = ? and playerID = ?
+	`, gameid, params.PlayerID)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	out := []SimilarGamePoint{}
+	err = s.DB.Select(&out, `
+			select distinct gameid, playerid, loopid
+			from similarGamePoints(?, ?, ?, ?, ?, ?, ?)
+		`,
+		gameid, params.PlayerID, playerInfo.Race, playerInfo.OpponentRace,
+		params.LoopID, params.Lag, params.Limit,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

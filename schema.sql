@@ -40,8 +40,8 @@ CREATE TABLE players (
     toonID BIGINT NOT NULL,
 
     name TEXT NOT NULL,
-    race TEXT NOT NULL,
-    opponentRace TEXT NOT NULL,
+    race TEXT NOT NULL COLLATE "utf8_bin",
+    opponentRace TEXT NOT NULL COLLATE "utf8_bin",
 
     mmr DOUBLE NOT NULL,
     apm DOUBLE NOT NULL,
@@ -76,18 +76,18 @@ CREATE TABLE buildcomp (
 CREATE TABLE compvecs (
     gameID BIGINT NOT NULL,
     playerID INT NOT NULL,
-    race TEXT NOT NULL,
-    opponentRace TEXT NOT NULL,
+    race TEXT NOT NULL COLLATE "utf8_bin",
+    opponentRace TEXT NOT NULL COLLATE "utf8_bin",
 
     loopID BIGINT NOT NULL,
     loopLag BIGINT,
 
     vec LONGBLOB NOT NULL,
 
-    SORT KEY (gameID, playerID),
+    SORT KEY (race, opponentRace) with (columnstore_segment_rows=200000),
     SHARD (gameID, playerID),
 
-    KEY (race, opponentRace)
+    KEY (race, opponentRace) USING HASH
 );
 
 CREATE ROWSTORE TABLE livebuildcomp (
@@ -176,22 +176,37 @@ create or replace function gameHistory(p_gameid BIGINT, p_playerid BIGINT, p_min
             AND loopID between p_minloop and p_maxloop
         order by loopID asc;
 
-create or replace function similarGamePoints(p_gameid BIGINT, p_playerid BIGINT, p_loopid BIGINT, p_lag BIGINT, p_limit INT)
-    RETURNS TABLE AS RETURN
-        select
-            other.gameid,
-            other.playerid,
-            other.loopid,
-            other.looplag,
-            EUCLIDEAN_DISTANCE(player.vec, other.vec) dist
-        from
-            compvec(p_loopid - p_lag, p_loopid) as player,
-            compvecs as other
-        where player.gameid = p_gameid and player.playerid = p_playerid
-        and other.gameid != player.gameid
-        and other.race = player.race and other.opponentRace = player.opponentRace
-        order by dist asc
-        limit p_limit;
+CREATE OR REPLACE FUNCTION similarGamePoints(
+    p_gameid        BIGINT,
+    p_playerid      BIGINT,
+    p_race          TEXT NOT NULL COLLATE "utf8_bin",
+    p_opponentRace  TEXT NOT NULL COLLATE "utf8_bin",
+    p_loopid        BIGINT,
+    p_lag           BIGINT,
+    p_limit         INT
+)
+RETURNS TABLE AS RETURN
+    select
+        other.gameid,
+        other.playerid,
+        other.loopid,
+        other.looplag,
+        EUCLIDEAN_DISTANCE(other.vec, (
+            select vec from compvec(p_loopid - p_lag, p_loopid)
+            where gameid = p_gameid and playerid = p_playerid
+        )) dist
+    from
+        compvecs as other
+    where
+        other.gameid != p_gameid
+        and other.race = p_race
+        and other.opponentRace = p_opponentRace
+    order by
+        dist asc,
+        ABS(p_loopid-other.loopid) asc,
+        other.gameid,
+        other.playerid
+    limit p_limit;
 
 delimiter //
 

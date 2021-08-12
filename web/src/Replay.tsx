@@ -1,63 +1,17 @@
-import React, { useState, useReducer, memo } from 'react';
+import React, { useReducer, memo, useState } from 'react';
 import { useParams } from 'react-router';
-import { useInterval } from 'rooks';
+import { useCounter, useDebounce, useInterval } from 'rooks';
+import * as d3array from 'd3-array';
 
 import { PlayIcon, StopIcon, PauseIcon, FastForwardIcon, RewindIcon } from '@heroicons/react/solid';
-import { ReplayMeta } from './models';
+import { ReplayMeta, ReplayEvent } from './models';
 import Header from './Header';
 import Timeline from './Timeline';
 import { useFetch, formatSeconds } from './util';
 import classNames from 'classnames';
+import { useEffect } from 'react';
 
-type State = {
-    running: boolean;
-    loop: number;
-    player: 1 | 2;
-};
-
-type Action =
-    | { type: 'select-player'; player: 1 | 2 }
-    | { type: 'start' }
-    | { type: 'stop' }
-    | { type: 'tick' }
-    | { type: 'pause' }
-    | { type: 'skip'; amt: number };
-
-const reduceState = (state: State, action: Action) => {
-    switch (action.type) {
-        case 'select-player':
-            return {
-                ...state,
-                player: action.player,
-            };
-        case 'start':
-            return {
-                ...state,
-                running: true,
-            };
-        case 'stop':
-            return {
-                ...state,
-                running: false,
-                loop: 0,
-            };
-        case 'tick':
-            return {
-                ...state,
-                loop: state.loop + 1,
-            };
-        case 'pause':
-            return {
-                ...state,
-                running: false,
-            };
-        case 'skip':
-            return {
-                ...state,
-                loop: Math.max(0, state.loop + action.amt),
-            };
-    }
-};
+import { initialState, reduceState, SimilarGame } from './ReplayState';
 
 const HeaderCell = memo(
     ({
@@ -74,42 +28,50 @@ const HeaderCell = memo(
 
 const Replay: React.FC = () => {
     const { gameid } = useParams<{ gameid: string }>();
+    const [state, dispatch] = useReducer(reduceState, null, initialState);
 
-    const [replay, setReplay] = useState<ReplayMeta | undefined>(undefined);
-    useFetch(`api/replays/${gameid}`, setReplay);
+    const replay = useFetch<ReplayMeta>(`api/replays/${gameid}`);
+    const events = useFetch<Array<ReplayEvent>>(`api/replays/${gameid}/timeline`);
 
-    const [state, dispatch] = useReducer(reduceState, {
-        running: false,
-        loop: 0,
-        player: 1,
-    });
+    useInterval(() => dispatch({ type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / 16, true);
 
-    const [startTick, stopTick] = useInterval(() => dispatch({ type: 'tick' }), 1000 / 16);
+    const playerEvents = (events || []).filter((e) => e.playerid === state.player);
+    const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
+    const lastEventIdx = bisector.left(playerEvents, state.loop);
 
-    const stop = () => {
-        dispatch({ type: 'stop' });
-        stopTick();
-    };
-    const start = () => {
-        dispatch({ type: 'start' });
-        startTick();
-    };
-    const pause = () => {
-        dispatch({ type: 'pause' });
-        stopTick();
-    };
-    const skipBackward = () => {
-        dispatch({ type: 'skip', amt: -16 * 15 });
-    };
-    const skipForward = () => {
-        dispatch({ type: 'skip', amt: 16 * 15 });
-    };
-    const selectPlayer = (player: 1 | 2) => {
-        dispatch({ type: 'select-player', player });
-    };
+    useEffect(() => {
+        let didCancel = false;
+        if (!replay) {
+            return;
+        }
 
-    if (!replay) {
-        return <div>Loading...</div>;
+        const loop = state.loop;
+        const params = new URLSearchParams({
+            playerid: state.player.toString(),
+            loop: loop.toString(),
+            lag: '2400',
+            limit: '5',
+        });
+
+        (async () => {
+            const response = await fetch(`http://localhost:8000/api/replays/${replay.gameid}/similar?${params}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (!didCancel) {
+                    dispatch({ type: 'similar', similar: data.map((s: SimilarGame) => ({ ...s, startLoop: loop })) });
+                }
+            } else {
+                console.error(await response.text());
+            }
+        })();
+
+        return () => {
+            didCancel = true;
+        };
+    }, [replay?.gameid, state.player, lastEventIdx - 1]);
+
+    if (!replay || !events) {
+        return <h1>Loading...</h1>;
     }
 
     return (
@@ -127,7 +89,7 @@ const Replay: React.FC = () => {
                                 'bg-indigo-200': state.player === 1,
                             }
                         )}
-                        onClick={() => selectPlayer(1)}
+                        onClick={() => dispatch({ type: 'select-player', player: 1 })}
                     >
                         {replay.p1Name}
                     </HeaderCell>
@@ -140,33 +102,53 @@ const Replay: React.FC = () => {
                                 'bg-indigo-200': state.player === 2,
                             }
                         )}
-                        onClick={() => selectPlayer(2)}
+                        onClick={() => dispatch({ type: 'select-player', player: 2 })}
                     >
                         {replay.p2Name}
                     </HeaderCell>
                 </div>
                 <div className="flex px-10">
                     <div className="self-center mr-2 text-gray-400 h-6 cursor-pointer hover:text-indigo-400">
-                        <RewindIcon className="inline h-6 text-gray-400 hover:text-indigo-400" onClick={skipBackward} />
+                        <RewindIcon
+                            className="inline h-6 text-gray-400 hover:text-indigo-400"
+                            onClick={() => dispatch({ type: 'skip', amt: -16 * 15, maxLoops: replay.loops })}
+                        />
                         {state.running ? (
-                            <PauseIcon className="inline h-6 text-gray-400 hover:text-indigo-400" onClick={pause} />
+                            <PauseIcon
+                                className="inline h-6 text-gray-400 hover:text-indigo-400"
+                                onClick={() => dispatch({ type: 'pause' })}
+                            />
                         ) : (
-                            <PlayIcon className="inline h-6 text-gray-400 hover:text-indigo-400" onClick={start} />
+                            <PlayIcon
+                                className="inline h-6 text-gray-400 hover:text-indigo-400"
+                                onClick={() => dispatch({ type: 'start' })}
+                            />
                         )}
-                        <StopIcon className="inline h-6 text-gray-400 hover:text-indigo-400" onClick={stop} />
+                        <StopIcon
+                            className="inline h-6 text-gray-400 hover:text-indigo-400"
+                            onClick={() => dispatch({ type: 'stop' })}
+                        />
                         <FastForwardIcon
                             className="inline h-6 text-gray-400 hover:text-indigo-400"
-                            onClick={skipForward}
+                            onClick={() => dispatch({ type: 'skip', amt: 16 * 15, maxLoops: replay.loops })}
                         />
                     </div>
-                    <HeaderCell k="game time">
+                    <HeaderCell k="game time" title={`${state.loop}`}>
                         <span className="select-none">{formatSeconds(state.loop / 16)}</span>
                     </HeaderCell>
                 </div>
             </Header>
             <div className="grid gap-10">
                 <Timeline live gameID={replay.gameid} player={state.player} loop={state.loop || 0} />
-                <Timeline gameID={replay.gameid} player={state.player === 1 ? 2 : 1} loop={state.loop || 0} />
+                {state.similar.map((game, i) => {
+                    console.log(game);
+                    let gameloop = game.loop + (state.loop - game.startLoop);
+                    if (Math.abs(gameloop - state.loop) <= 80) {
+                        gameloop = state.loop;
+                    }
+
+                    return <Timeline key={i} gameID={game.gameid} player={game.playerid} loop={gameloop} />;
+                })}
             </div>
         </>
     );

@@ -59,15 +59,14 @@ const Replay = ({ replay }: { replay: ReplayMeta }) => {
 // TODO: add search and filtering
 
 const Home: React.FC = () => {
-    const [replays, setReplays] = useState<Array<ReplayMeta>>([]);
-    useFetch('api/replays', setReplays);
+    const replays = useFetch<Array<ReplayMeta>>('api/replays');
 
     return (
         <>
             <Header />
             <div className="grid gap-3 2xl:grid-cols-5 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2">
-                {replays.length === 0 ? Spinner : null}
-                {replays.map((r) => (
+                {!replays ? Spinner : null}
+                {replays?.map((r) => (
                     <Replay replay={r} key={r.gameid} />
                 ))}
             </div>

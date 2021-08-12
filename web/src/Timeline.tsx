@@ -5,12 +5,12 @@ import classnames from 'classnames';
 import { scaleSymlog } from 'd3-scale';
 import * as d3array from 'd3-array';
 
-import { Event } from './models';
+import { ReplayEvent } from './models';
 import { useFetch, formatSeconds } from './util';
 
 type Props = {
     gameID: string;
-    player: number;
+    player: 1 | 2;
     loop: number;
     live?: boolean;
 };
@@ -35,32 +35,38 @@ const Tickmark = memo(({ tick, left, now }: { tick: number; left: number; now: n
 ));
 
 const Timeline: React.FC<Props> = (props: Props) => {
-    const [events, setEvents] = useState<[Array<Event>, Array<Event>]>([[], []]);
-    useFetch(`api/replays/${props.gameID}/timeline`, (allEvents: Array<Event>) => {
-        let g = d3array.groups(allEvents, (e) => e.playerid);
-        setEvents([g[0][1], g[1][1]]);
+    const events = useFetch(`api/replays/${props.gameID}/timeline`, (allEvents: Array<ReplayEvent>) => {
+        let g = d3array.group(allEvents, (e) => e.playerid);
+        return {
+            1: g.get(1) || [],
+            2: g.get(2) || [],
+        };
     });
 
-    const [ref, dimensions] = useDimensionsRef({ updateOnScroll: false, updateOnResize: true });
+    const [ref, dimensions] = useDimensionsRef();
     const width = dimensions?.width || 0;
 
-    const loopRadius = loopsPerMinute * (width > 2000 ? 4 : 2);
+    if (!events) {
+        return null;
+    }
+
+    const loopRadius = loopsPerMinute * (width > 2000 ? 6 : 2);
     const minLoop = props.loop - loopRadius;
     const maxLoop = props.loop + loopRadius;
 
     const xAxis = scaleSymlog()
-        .constant(10 ** 3)
+        .constant(width > 2000 ? 10 ** 5 : 10 ** 3)
         .domain([-loopRadius, loopRadius])
         .range([0, width]);
 
-    const bisector = d3array.bisector((e: Event) => e.loopid);
-    const startIndex = bisector.left(events[props.player - 1], minLoop);
-    const endIndex = bisector.right(events[props.player - 1], props.live ? props.loop : maxLoop, startIndex);
-    const visibleEvents = events[props.player - 1].slice(startIndex, endIndex);
+    const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
+    const startIndex = bisector.left(events[props.player], minLoop);
+    const endIndex = bisector.right(events[props.player], props.live ? props.loop : maxLoop, startIndex);
+    const visibleEvents = events[props.player].slice(startIndex, endIndex);
 
     const binner = d3array
-        .bin<Event, number>()
-        .value((e: Event) => e.loopid)
+        .bin<ReplayEvent, number>()
+        .value((e: ReplayEvent) => e.loopid)
         .domain([minLoop, maxLoop])
         .thresholds(50);
 
@@ -77,8 +83,8 @@ const Timeline: React.FC<Props> = (props: Props) => {
         const kindsBySection = d3array.rollups(
             bin,
             (xs) => d3array.sum(xs, (e) => e.num),
-            (e: Event) => (e.num < 0 ? 'bottom' : 'top'),
-            (e: Event) => e.kind
+            (e: ReplayEvent) => (e.num < 0 ? 'bottom' : 'top'),
+            (e: ReplayEvent) => e.kind
         );
 
         const padding = 15;
