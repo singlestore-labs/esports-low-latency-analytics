@@ -141,7 +141,6 @@ const Replay: React.FC = () => {
             <div className="grid gap-10">
                 <Timeline live gameID={replay.gameid} player={state.player} loop={state.loop || 0} />
                 {state.similar.map((game, i) => {
-                    console.log(game);
                     let gameloop = game.loop + (state.loop - game.startLoop);
                     if (Math.abs(gameloop - state.loop) <= 80) {
                         gameloop = state.loop;
