@@ -25,7 +25,7 @@ CREATE ROWSTORE REFERENCE TABLE kind2icon (
     PRIMARY KEY (kind)
 );
 
-LOAD DATA INFILE '/data/kind2icon.csv'
+LOAD DATA LOCAL INFILE 'data/kind2icon.csv'
 SKIP DUPLICATE KEY ERRORS
 INTO TABLE kind2icon
 FIELDS TERMINATED BY ','
@@ -84,7 +84,8 @@ CREATE TABLE compvecs (
 
     vec LONGBLOB NOT NULL,
 
-    SORT KEY (race, opponentRace) with (columnstore_segment_rows=200000),
+    SORT KEY (race, opponentRace, loopid) with (columnstore_segment_rows=200000),
+    key (race, opponentRace, loopid),
     SHARD (gameID, playerID),
 
     KEY (race, opponentRace) USING HASH
@@ -114,7 +115,6 @@ CREATE OR REPLACE FUNCTION compvec_inner(p_minloop BIGINT, p_maxloop BIGINT)
                     and bc.playerid = players.playerid
                     and bc.kind = kinds.kind
                     and bc.loopid BETWEEN p_minloop AND p_maxloop
-                    and num = 1
             ), 0) as num
         from players, uniquekind as kinds, games
         where
@@ -144,7 +144,6 @@ create or replace function comp(p_gameid bigint, p_playerid int, p_minloop BIGIN
         from buildcomp
         where gameid = p_gameid and playerid = p_playerid
         and loopid between p_minloop and p_maxloop
-        and num = 1
         group by kind;
 
 create or replace function compare(p_gameid bigint, p_playerid int, p_loopid bigint, p_gameid2 bigint, p_playerid2 int, p_loopid2 bigint, p_lag BIGINT)
@@ -201,6 +200,7 @@ RETURNS TABLE AS RETURN
         other.gameid != p_gameid
         and other.race = p_race
         and other.opponentRace = p_opponentRace
+        and other.loopid between p_loopid - (p_lag * 2) and p_loopid + (p_lag * 2)
     order by
         dist asc,
         ABS(p_loopid-other.loopid) asc,

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+exec /usr/lib/singlestore-client/singlestore-client \
+    --no-defaults \
+    --local-infile \
+    --plugin-dir="/usr/lib/singlestore-client/plugin" \
+    --protocol=tcp \
+    --prompt="singlestore> " \
+    -u root \
+    -h 127.0.0.1 \
+    -P 3306 \
+    "${@}"

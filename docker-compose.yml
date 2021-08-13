@@ -1,13 +1,15 @@
-version: '3.8'
+version: "3.8"
 services:
   singlestore:
-    image: singlestore/cluster-in-a-box:centos-7.5.6-9e799dbf4f-3.2.11-1.11.9
+    image: singlestore/cluster-in-a-box:centos-7.5.7-b31088a4e0-3.2.11-1.11.10
     container_name: singlestore
+    working_dir: /
     volumes:
       # persist data between runs:
       - /var/lib/memsql
       - ./schema.sql:/init.sql:ro
       - ./data:/data:ro
+      - ./data/singlestore-client-local-infile:/usr/bin/memsql:ro
     ports:
       - 3306:3306
       - 8080:8080
