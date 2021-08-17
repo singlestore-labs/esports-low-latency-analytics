@@ -4,21 +4,23 @@ import (
 	"log"
 	"os"
 
-	"cuelang.org/go/pkg/strconv"
+	"github.com/BurntSushi/toml"
 )
 
 type ProcessorConfig struct {
-	Verbose    int
-	NumWorkers int
-	ReplayDir  string
+	Verbose     int
+	NumWorkers  int
+	ReplayDir   string
+	Singlestore SinglestoreConfig
 }
 
 type PlayerConfig struct {
-	Verbose   int
-	ReplayDir string
-	IconDir   string
-	Port      int
-	GinMode   string // move to env (GIN_ENV)
+	Verbose     int
+	ReplayDir   string
+	IconDir     string
+	Port        int
+	GinMode     string
+	Singlestore SinglestoreConfig
 }
 
 type SinglestoreConfig struct {
@@ -29,27 +31,16 @@ type SinglestoreConfig struct {
 	Database string
 }
 
-func SinglestoreConfigFromEnv() SinglestoreConfig {
-	return SinglestoreConfig{
-		Host:     envOrDefault("SINGLESTORE_HOST", "127.0.0.1"),
-		Port:     mustParseInt(envOrDefault("SINGLESTORE_PORT", "3306")),
-		Username: envOrDefault("SINGLESTORE_USER", "root"),
-		Password: envOrDefault("SINGLESTORE_PASSWORD", ""),
-		Database: envOrDefault("SINGLESTORE_DATABASE", "sc2"),
+func LoadTOMLFiles(out interface{}, filenames []string) error {
+	for _, filename := range filenames {
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			log.Printf("toml file `%s` not found, skipping", filename)
+			continue
+		}
+		_, err := toml.DecodeFile(filename, out)
+		if err != nil {
+			return err
+		}
 	}
-}
-
-func envOrDefault(key, def string) string {
-	if v, ok := os.LookupEnv(key); ok {
-		return v
-	}
-	return def
-}
-
-func mustParseInt(s string) int {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return i
+	return nil
 }

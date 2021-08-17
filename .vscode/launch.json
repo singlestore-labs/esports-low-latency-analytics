@@ -9,10 +9,10 @@
             "program": "${workspaceFolder}/src/bin/processor",
             "cwd": "${workspaceFolder}",
             "args": [
-                // "--verbose", "1",
-                // "--num-workers", "8",
-                "--replay-dir",
-                "data/replays",
+                "--config",
+                "${workspaceFolder}/config.example.toml",
+                "--config",
+                "${workspaceFolder}/config.toml",
             ]
         },
         {
@@ -23,13 +23,10 @@
             "program": "${workspaceFolder}/src/bin/player",
             "cwd": "${workspaceFolder}",
             "args": [
-                // "--verbose", "1",
-                "--replay-dir",
-                "data/replays",
-                "--icon-dir",
-                "data/icons",
-                "--port",
-                "8000",
+                "--config",
+                "${workspaceFolder}/config.example.toml",
+                "--config",
+                "${workspaceFolder}/config.toml",
             ]
         }
     ]

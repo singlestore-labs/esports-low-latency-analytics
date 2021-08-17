@@ -1,8 +1,4 @@
-DROP DATABASE IF EXISTS sc2;
-CREATE DATABASE sc2;
-USE sc2;
-
-CREATE REFERENCE TABLE games (
+CREATE ROWSTORE TABLE games (
     gameID BIGINT PRIMARY KEY NOT NULL,
     filename TEXT NOT NULL,
     ts DATETIME NOT NULL,
@@ -11,7 +7,11 @@ CREATE REFERENCE TABLE games (
     durationSec DOUBLE NOT NULL,
     mapName TEXT NOT NULL,
     gameVersion TEXT NOT NULL,
-    matchup TEXT NOT NULL
+    matchup TEXT NOT NULL,
+
+    loaded BOOLEAN NOT NULL DEFAULT FALSE,
+
+    SHARD (gameID)
 );
 
 CREATE ROWSTORE REFERENCE TABLE uniquekind (
@@ -48,7 +48,8 @@ CREATE TABLE players (
     result TEXT NOT NULL,
 
     PRIMARY KEY (gameID, playerID),
-    SORT KEY (gameID, playerID)
+    SORT KEY (gameID, playerID),
+    SHARD (gameID)
 );
 
 CREATE TABLE playerstats (
@@ -64,7 +65,7 @@ CREATE TABLE playerstats (
 	vespeneCurrent         INT NOT NULL,
 
     SORT KEY (gameID, loopID),
-    SHARD (gameID, playerID)
+    SHARD (gameID)
 );
 
 CREATE TABLE buildcomp (
@@ -76,7 +77,7 @@ CREATE TABLE buildcomp (
     num INT NOT NULL,
 
     SORT KEY (gameID, playerID, loopID),
-    SHARD (gameID, playerID)
+    SHARD (gameID)
 );
 
 CREATE TABLE compvecs (
@@ -91,22 +92,9 @@ CREATE TABLE compvecs (
     vec LONGBLOB NOT NULL,
 
     SORT KEY (race, opponentRace, loopid) with (columnstore_segment_rows=200000),
-    key (race, opponentRace, loopid),
-    SHARD (gameID, playerID),
-
-    KEY (race, opponentRace) USING HASH
-);
-
-CREATE ROWSTORE TABLE livebuildcomp (
-    gameID BIGINT NOT NULL,
-    playerID INT NOT NULL,
-    loopID BIGINT NOT NULL,
-
-    kind TEXT NOT NULL COLLATE "utf8_bin",
-    num INT NOT NULL,
-
-    KEY (gameID, playerID, loopID),
-    SHARD (gameID, playerID)
+    UNIQUE KEY (gameid, playerid, loopid, looplag),
+    KEY (race, opponentRace, loopid),
+    SHARD (gameID)
 );
 
 CREATE OR REPLACE FUNCTION compvec_inner(p_minloop BIGINT, p_maxloop BIGINT)
@@ -219,9 +207,9 @@ delimiter //
 create or replace procedure prepareCompvecsLag(loopInterval INT, maxloop BIGINT, lag BIGINT) AS
 BEGIN
     FOR curloop IN loopInterval .. maxloop BY loopInterval LOOP
-        insert into compvecs (gameid, playerid, race, opponentRace, loopid, looplag, vec)
-        select gameid, playerid, race, opponentRace, curloop, lag, vec
-        from compvec(IFNULL(curloop-lag, 0), curloop);
+        REPLACE INTO compvecs (gameid, playerid, race, opponentRace, loopid, looplag, vec)
+        SELECT gameid, playerid, race, opponentRace, curloop, lag, vec
+        FROM compvec(IFNULL(curloop-lag, 0), curloop);
     END LOOP;
 END //
 
@@ -230,7 +218,6 @@ DECLARE
     maxlooptbl QUERY(maxloop BIGINT) = select max(loops) from games;
     maxloop BIGINT = SCALAR(maxlooptbl);
 BEGIN
-    DELETE FROM compvecs;
     CALL prepareCompvecsLag(loopInterval, maxloop, null);
     CALL prepareCompvecsLag(loopInterval, maxloop, 160); -- ~10 seconds
     CALL prepareCompvecsLag(loopInterval, maxloop, 480); -- ~30 seconds
@@ -249,6 +236,15 @@ create or replace procedure postprocess() AS
 BEGIN
     CALL prepareUniqueKinds();
     CALL prepareCompvecs(80);
+END //
+
+create or replace procedure deleteGame(p_gameid BIGINT) AS
+BEGIN
+    DELETE FROM games where gameid = p_gameid;
+    DELETE FROM players where gameid = p_gameid;
+    DELETE FROM playerstats where gameid = p_gameid;
+    DELETE FROM buildcomp where gameid = p_gameid;
+    DELETE FROM compvecs where gameid = p_gameid;
 END //
 
 delimiter ;

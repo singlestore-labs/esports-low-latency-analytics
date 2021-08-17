@@ -1,0 +1,25 @@
+# log level
+# 0 = no logging
+# 1 = info
+# 2 = debug
+# 3 = silly
+verbose = 1
+
+# uncomment to override the number of processor workers
+# numWorkers = 8
+
+# uncomment to enable production
+# ginEnv = "production"
+
+replayDir = "data/replays"
+iconDir = "data/icons"
+
+# port to run the web ui on
+port = 8000
+
+[singlestore]
+    host = "172.17.0.1"
+    port = 3306
+    username = "root"
+    password = ""
+    database = "sc2"

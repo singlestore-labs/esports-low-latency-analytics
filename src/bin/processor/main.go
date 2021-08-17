@@ -20,26 +20,25 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	config := &src.ProcessorConfig{}
-
-	flag.IntVar(&config.Verbose, "verbose", 0, "Verbose level")
-	flag.IntVar(&config.NumWorkers, "num-workers", runtime.NumCPU(), "Number of workers")
-	flag.StringVar(&config.ReplayDir, "replay-dir", "", "Replay directory")
-
+	configPaths := src.FlagStringSlice{}
+	flag.Var(&configPaths, "config", "path to the config file; can be provided multiple times, files will be merged in the order provided")
 	flag.Parse()
 
-	if len(config.ReplayDir) == 0 {
-		log.Fatal("Replay directory and icon directory must be set")
+	if len(configPaths) == 0 {
+		configPaths.Set("config.toml")
 	}
 
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	dbConfig := src.SinglestoreConfigFromEnv()
+	config := &src.ProcessorConfig{}
+	err := src.LoadTOMLFiles(config, []string(configPaths))
+	if err != nil {
+		log.Fatalf("unable to load config files: %v; error: %+v", configPaths, err)
+	}
 
 	var db *src.Singlestore
-	var err error
 	for {
-		db, err = src.NewSinglestore(dbConfig)
+		db, err = src.NewSinglestore(config.Singlestore)
 		if err != nil {
 			log.Printf("unable to connect to SingleStore: %s; retrying...", err)
 			time.Sleep(time.Second)
@@ -49,17 +48,22 @@ func main() {
 	}
 	defer db.Close()
 
+	numWorkers := runtime.NumCPU()
+	if config.NumWorkers != 0 {
+		numWorkers = config.NumWorkers
+	}
+
 	// Trap SIGINT to trigger a shutdown.
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Printf("starting processor with %d workers", config.NumWorkers)
+	log.Printf("starting processor with %d workers", numWorkers)
 
 	workQueue := make(chan string)
 	closeChannels := make([]chan struct{}, 0)
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < config.NumWorkers; i++ {
+	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		closeCh := make(chan struct{})
 		closeChannels = append(closeChannels, closeCh)

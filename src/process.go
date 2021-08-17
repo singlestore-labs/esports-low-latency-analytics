@@ -2,7 +2,9 @@ package src
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/binary"
+	"fmt"
 	"html"
 	"log"
 	"strings"
@@ -46,7 +48,52 @@ func gameIDFromFileName(fileName string) int64 {
 	return int64(binary.BigEndian.Uint64(data[:8]))
 }
 
+func GameAlreadyLoaded(db sq.BaseRunner, gameid int64) bool {
+	row := sq.
+		Select("1").
+		From("games").
+		Where(sq.Eq{"gameid": gameid, "loaded": true}).
+		RunWith(db).
+		QueryRow()
+
+	var out string
+	return row.Scan(&out) != sql.ErrNoRows
+}
+
+func DeleteGame(db sq.BaseRunner, gameid int64) error {
+	_, err := db.Exec("call deleteGame(?)", gameid)
+	return err
+}
+
+func MarkGameLoaded(db sq.BaseRunner, gameid int64) error {
+	res, err := db.Exec("update games set loaded = true where gameid = ?", gameid)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected != 1 {
+		return fmt.Errorf("failed to mark game %d as loaded", gameid)
+	}
+	return nil
+}
+
 func Run(env *ProcessorEnv, filename string) error {
+	cleanFilename := strings.TrimPrefix(filename, env.ReplayDir+"/")
+	gameID := gameIDFromFileName(cleanFilename)
+
+	if GameAlreadyLoaded(env.DB, gameID) {
+		log.Printf("SKIP: game already loaded: %s", filename)
+		return nil
+	}
+
+	err := DeleteGame(env.DB, gameID)
+	if err != nil {
+		return err
+	}
+
 	replay, err := rep.NewFromFile(filename)
 	if err != nil {
 		return err
@@ -60,9 +107,6 @@ func Run(env *ProcessorEnv, filename string) error {
 		log.Printf("SKIP: replay longer than 1 hour (57600 loops): %s", filename)
 		return nil
 	}
-
-	cleanFilename := strings.TrimPrefix(filename, env.ReplayDir+"/")
-	gameID := gameIDFromFileName(cleanFilename)
 
 	_, err = sq.
 		Replace("games").
@@ -282,5 +326,5 @@ func Run(env *ProcessorEnv, filename string) error {
 		}
 	}
 
-	return nil
+	return MarkGameLoaded(env.DB, gameID)
 }
