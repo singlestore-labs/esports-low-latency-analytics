@@ -3,18 +3,18 @@
 # 1 = info
 # 2 = debug
 # 3 = silly
-verbose = 1
+# verbose = 1
 
 # uncomment to override the number of processor workers
 # numWorkers = 8
 
-# uncomment to enable production
-# ginEnv = "production"
+# comment to run the replay player api with request logging
+ginMode = "release"
 
 replayDir = "data/replays"
 iconDir = "data/icons"
 
-# port to run the web ui on
+# port to run the player api on
 port = 8000
 
 [singlestore]
