@@ -5,7 +5,7 @@ import classnames from 'classnames';
 import { scaleSymlog } from 'd3-scale';
 import * as d3array from 'd3-array';
 
-import { ReplayEvent } from './models';
+import { loadTimeline, ReplayEvent, ReplayStats } from './models';
 import { useFetch, formatSeconds } from './util';
 
 type Props = {
@@ -35,20 +35,19 @@ const Tickmark = memo(({ tick, left, now }: { tick: number; left: number; now: n
 ));
 
 const Timeline: React.FC<Props> = (props: Props) => {
-    const events = useFetch(`api/replays/${props.gameID}/timeline`, (allEvents: Array<ReplayEvent>) => {
-        let g = d3array.group(allEvents, (e) => e.playerid);
-        return {
-            1: g.get(1) || [],
-            2: g.get(2) || [],
-        };
-    });
+    const state = useFetch(`api/replays/${props.gameID}/timeline`, loadTimeline);
 
     const [ref, dimensions] = useDimensionsRef();
     const width = dimensions?.width || 0;
 
-    if (!events) {
+    if (!state) {
         return null;
     }
+    const { events, stats } = state[props.player];
+
+    // TODO: add tooltip with stats and current comp
+    // TODO: add current stats for live timeline
+    // TODO: add background graph for stats
 
     const loopRadius = loopsPerMinute * (width > 2000 ? 6 : 2);
     const minLoop = props.loop - loopRadius;
@@ -60,9 +59,9 @@ const Timeline: React.FC<Props> = (props: Props) => {
         .range([0, width]);
 
     const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
-    const startIndex = bisector.left(events[props.player], minLoop);
-    const endIndex = bisector.right(events[props.player], props.live ? props.loop : maxLoop, startIndex);
-    const visibleEvents = events[props.player].slice(startIndex, endIndex);
+    const startIndex = bisector.left(events, minLoop);
+    const endIndex = bisector.right(events, props.live ? props.loop : maxLoop, startIndex);
+    const visibleEvents = events.slice(startIndex, endIndex);
 
     const binner = d3array
         .bin<ReplayEvent, number>()

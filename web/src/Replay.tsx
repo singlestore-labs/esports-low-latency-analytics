@@ -1,10 +1,10 @@
 import React, { useReducer, memo, useState } from 'react';
 import { useParams } from 'react-router';
-import { useCounter, useDebounce, useInterval } from 'rooks';
+import { useInterval } from 'rooks';
 import * as d3array from 'd3-array';
 
 import { PlayIcon, StopIcon, PauseIcon, FastForwardIcon, RewindIcon } from '@heroicons/react/solid';
-import { ReplayMeta, ReplayEvent } from './models';
+import { ReplayMeta, ReplayEvent, loadTimeline } from './models';
 import Header from './Header';
 import Timeline from './Timeline';
 import { useFetch, formatSeconds } from './util';
@@ -31,11 +31,11 @@ const Replay: React.FC = () => {
     const [state, dispatch] = useReducer(reduceState, null, initialState);
 
     const replay = useFetch<ReplayMeta>(`api/replays/${gameid}`);
-    const events = useFetch<Array<ReplayEvent>>(`api/replays/${gameid}/timeline`);
+    const timeline = useFetch(`api/replays/${gameid}/timeline`, loadTimeline);
 
     useInterval(() => dispatch({ type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / 16, true);
 
-    const playerEvents = (events || []).filter((e) => e.playerid === state.player);
+    const playerEvents = timeline ? timeline[state.player].events : [];
     const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
     const lastEventIdx = bisector.left(playerEvents, state.loop);
 
@@ -70,7 +70,7 @@ const Replay: React.FC = () => {
         };
     }, [replay?.gameid, state.player, lastEventIdx - 1]);
 
-    if (!replay || !events) {
+    if (!replay || !timeline) {
         return <h1>Loading...</h1>;
     }
 

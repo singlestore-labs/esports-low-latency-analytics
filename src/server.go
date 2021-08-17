@@ -155,22 +155,13 @@ func (s *ReplayServer) GetReplayTimeline(c *gin.Context) {
 		return
 	}
 
-	params := struct {
-		MinLoopID int64 `form:"minloop"`
-	}{}
-
-	if err := c.ShouldBindQuery(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	timeline, err := LoadTimeline(s.DB, gameid, params.MinLoopID)
+	timeline, err := LoadTimeline(s.DB, gameid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, timeline.Events)
+	c.JSON(200, timeline)
 }
 
 type SimilarGamePoint struct {

@@ -1,5 +1,3 @@
-import { ReplayMeta, ReplayEvent } from './models';
-
 export type SimilarGame = {
     gameid: string;
     playerid: 1 | 2;
