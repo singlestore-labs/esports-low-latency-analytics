@@ -157,10 +157,15 @@ func Run(env *ProcessorEnv, filename string) error {
 		case TrackerEvtIDPlayerStats:
 			stats := evt.Structv("stats")
 			statsLoader.Encode(&PlayerStats{
-				GameID:   gameID,
-				PlayerID: int(evt.Int("playerId")),
-				LoopID:   evt.Loop(),
-				Stats:    stats.String(),
+				GameID:                 gameID,
+				PlayerID:               int(evt.Int("playerId")),
+				LoopID:                 evt.Loop(),
+				FoodMade:               int(stats.Int("scoreValueFoodMade")),
+				FoodUsed:               int(stats.Int("scoreValueFoodUsed")),
+				MineralsCollectionRate: int(stats.Int("scoreValueMineralsCollectionRate")),
+				MineralsCurrent:        int(stats.Int("scoreValueMineralsCurrent")),
+				VespeneCollectionRate:  int(stats.Int("scoreValueVespeneCollectionRate")),
+				VespeneCurrent:         int(stats.Int("scoreValueVespeneCurrent")),
 			})
 		case TrackerEvtIDUnitBorn:
 			unitInfo := &UnitInfo{

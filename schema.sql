@@ -55,7 +55,13 @@ CREATE TABLE playerstats (
     gameID BIGINT NOT NULL,
     playerID INT NOT NULL,
     loopID BIGINT NOT NULL,
-    stats JSON NOT NULL,
+
+	foodMade               INT NOT NULL,
+	foodUsed               INT NOT NULL,
+	mineralsCollectionRate INT NOT NULL,
+	mineralsCurrent        INT NOT NULL,
+	vespeneCollectionRate  INT NOT NULL,
+	vespeneCurrent         INT NOT NULL,
 
     SORT KEY (gameID, loopID),
     SHARD (gameID, playerID)

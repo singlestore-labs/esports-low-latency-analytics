@@ -20,27 +20,26 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	configPaths := src.FlagStringSlice{}
+	config := &src.ProcessorConfig{}
 
-	flag.Var(&configPaths, "config", "path to the config file; can be provided multiple times, files will be merged in the order provided")
+	flag.IntVar(&config.Verbose, "verbose", 0, "Verbose level")
+	flag.IntVar(&config.NumWorkers, "num-workers", runtime.NumCPU(), "Number of workers")
+	flag.StringVar(&config.ReplayDir, "replay-dir", "", "Replay directory")
 
 	flag.Parse()
 
-	if len(configPaths) == 0 {
-		configPaths.Set("config.toml")
+	if len(config.ReplayDir) == 0 {
+		log.Fatal("Replay directory and icon directory must be set")
 	}
 
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	config := &src.ProcessorConfig{}
-	err := src.LoadTOMLFiles(config, []string(configPaths))
-	if err != nil {
-		log.Fatalf("unable to load config files: %v; error: %+v", configPaths, err)
-	}
+	dbConfig := src.SinglestoreConfigFromEnv()
 
 	var db *src.Singlestore
+	var err error
 	for {
-		db, err = src.NewSinglestore(config.Singlestore)
+		db, err = src.NewSinglestore(dbConfig)
 		if err != nil {
 			log.Printf("unable to connect to SingleStore: %s; retrying...", err)
 			time.Sleep(time.Second)
@@ -54,18 +53,13 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	numWorkers := runtime.NumCPU()
-	if config.NumWorkers != 0 {
-		numWorkers = config.NumWorkers
-	}
-
-	log.Printf("starting processor with %d workers", numWorkers)
+	log.Printf("starting processor with %d workers", config.NumWorkers)
 
 	workQueue := make(chan string)
 	closeChannels := make([]chan struct{}, 0)
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < numWorkers; i++ {
+	for i := 0; i < config.NumWorkers; i++ {
 		wg.Add(1)
 		closeCh := make(chan struct{})
 		closeChannels = append(closeChannels, closeCh)

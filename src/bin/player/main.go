@@ -17,27 +17,27 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	configPaths := src.FlagStringSlice{}
+	config := &src.PlayerConfig{}
 
-	flag.Var(&configPaths, "config", "path to the config file; can be provided multiple times, files will be merged in the order provided")
+	flag.IntVar(&config.Verbose, "verbose", 0, "Verbose level")
+	flag.StringVar(&config.ReplayDir, "replay-dir", "", "Replay directory")
+	flag.StringVar(&config.IconDir, "icon-dir", "", "Icon directory")
+	flag.IntVar(&config.Port, "port", 8000, "Port")
 
 	flag.Parse()
 
-	if len(configPaths) == 0 {
-		configPaths.Set("config.toml")
+	if len(config.ReplayDir) == 0 || len(config.IconDir) == 0 {
+		log.Fatal("Replay directory and icon directory must be set")
 	}
 
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	config := &src.PlayerConfig{}
-	err := src.LoadTOMLFiles(config, []string(configPaths))
-	if err != nil {
-		log.Fatalf("unable to load config files: %v; error: %+v", configPaths, err)
-	}
+	dbConfig := src.SinglestoreConfigFromEnv()
 
 	var db *src.Singlestore
+	var err error
 	for {
-		db, err = src.NewSinglestore(config.Singlestore)
+		db, err = src.NewSinglestore(dbConfig)
 		if err != nil {
 			log.Printf("unable to connect to SingleStore: %s; retrying...", err)
 			time.Sleep(time.Second)

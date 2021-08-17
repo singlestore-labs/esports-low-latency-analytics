@@ -9,14 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type SinglestoreConfig struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Database string
-}
-
 type Singlestore struct {
 	*sqlx.DB
 }
