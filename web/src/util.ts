@@ -30,7 +30,7 @@ export function* mapped<T, X>(xs: Iterable<T>, f: (x: T, i: number) => X): Gener
     }
 }
 
-export const useFetch = <T, X=unknown>(path: string, transform?: (d: X) => T): T | undefined => {
+export const useFetch = <T, X = unknown>(path: string, transform?: (d: X) => T): T | undefined => {
     const url = `http://localhost:8000/${path}`;
 
     const { data } = useQuery(
@@ -52,6 +52,8 @@ export const useFetch = <T, X=unknown>(path: string, transform?: (d: X) => T): T
 
     return data;
 };
+
+export const formatSigned = (num: number) => (num === 0 ? '0' : num > 0 ? `+${num}` : num.toString());
 
 export const formatSeconds = (seconds: number, signed = false) => {
     const sign = signed ? (seconds < 0 ? '-' : '+') : '';

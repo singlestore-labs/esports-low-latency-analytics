@@ -27,7 +27,8 @@
 	"extensions": [
 		"golang.Go",
 		"esbenp.prettier-vscode",
-		"bungcip.better-toml"
+		"bungcip.better-toml",
+		"bradlc.vscode-tailwindcss"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [ ],

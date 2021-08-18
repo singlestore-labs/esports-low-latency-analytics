@@ -1,15 +1,17 @@
 import * as d3array from 'd3-array';
 
+type Race = 'Zerg' | 'Protoss' | 'Terran';
+
 export type ReplayMeta = {
     gameid: string;
     filename: string;
     mapname: string;
     loops: number;
     p1Name: string;
-    p1Race: string;
+    p1Race: Race;
     p1Result: string;
     p2Name: string;
-    p2Race: string;
+    p2Race: Race;
     p2Result: string;
 };
 

@@ -1,12 +1,12 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { memo } from 'react';
 import { useDimensionsRef } from 'rooks';
 import classnames from 'classnames';
 
 import { scaleSymlog } from 'd3-scale';
 import * as d3array from 'd3-array';
 
-import { loadTimeline, ReplayEvent, ReplayStats } from './models';
-import { useFetch, formatSeconds } from './util';
+import { loadTimeline, ReplayEvent, ReplayMeta } from './models';
+import { useFetch, formatSeconds, formatSigned } from './util';
 
 type Props = {
     gameID: string;
@@ -18,6 +18,12 @@ type Props = {
 const timelineHeight = 200;
 const loopsPerSecond = 16;
 const loopsPerMinute = loopsPerSecond * 60;
+
+const raceToSupplyIcon = {
+    Terran: 'SupplyDepot',
+    Zerg: 'Overlord',
+    Protoss: 'Pylon',
+};
 
 const Tickmark = memo(({ tick, left, now }: { tick: number; left: number; now: number }) => (
     <div
@@ -35,6 +41,7 @@ const Tickmark = memo(({ tick, left, now }: { tick: number; left: number; now: n
 ));
 
 const Timeline: React.FC<Props> = (props: Props) => {
+    const replay = useFetch<ReplayMeta>(`api/replays/${props.gameID}`);
     const state = useFetch(`api/replays/${props.gameID}/timeline`, loadTimeline);
 
     const [ref, dimensions] = useDimensionsRef();
@@ -44,10 +51,6 @@ const Timeline: React.FC<Props> = (props: Props) => {
         return null;
     }
     const { events, stats } = state[props.player];
-
-    // TODO: add tooltip with stats and current comp
-    // TODO: add current stats for live timeline
-    // TODO: add background graph for stats
 
     const loopRadius = loopsPerMinute * (width > 2000 ? 6 : 2);
     const minLoop = props.loop - loopRadius;
@@ -145,35 +148,75 @@ const Timeline: React.FC<Props> = (props: Props) => {
         .filter((tick) => (props.live ? tick <= 0 : true))
         .map((tick) => <Tickmark key={tick} tick={tick} left={xAxis(tick)} now={props.loop} />);
 
+    const currentStats = d3array.greatest(stats, (s) => (s.loopid > props.loop ? -1 : s.loopid));
+    const supplyIcon = replay ? raceToSupplyIcon[props.player === 1 ? replay.p1Race : replay.p2Race] : 'SupplyDepot';
+
     return (
-        <div ref={ref} className="w-full relative" style={{ height: timelineHeight }}>
-            <div
-                className={classnames('absolute top-1/2 w-1/2 border border-gray-200 border-dashed', {
-                    'w-full': !props.live,
-                    'w-1/2': props.live,
-                })}
-            />
-            <div
-                className={classnames(
-                    'absolute left-1/2 h-full bg-gradient-to-b from-transparent via-gray-100 to-transparent w-1 transform -translate-x-1/2',
-                    { 'via-gray-200': props.live }
-                )}
-            />
-            <div
-                className={classnames('absolute right-0 h-full w-1/2', { hidden: !props.live })}
-                style={{
-                    backgroundImage: `
+        <div className="select-none">
+            <div className="w-full p-2 flex items-center bg-gray-50 rounded space-x-4 text-sm mb-2">
+                <div className="flex space-x-2 items-center text-sm">
+                    <div className={classnames('rounded-lg px-1 py-0.5 ', { 'bg-indigo-100': props.player === 1 })}>
+                        {replay?.p1Name}
+                    </div>
+                    <div className="text-sm text-gray-400">vs</div>
+                    <div className={classnames('rounded-lg px-1 py-0.5', { 'bg-indigo-100': props.player === 2 })}>
+                        {replay?.p2Name}
+                    </div>
+                </div>
+                <div className="flex space-x-2 items-center rounded bg-gray-200 px-1 py-0.5 text-gray-800 text-sm">
+                    <img
+                        className="h-5"
+                        style={{ filter: 'sepia(100%) hue-rotate(180deg) saturate(3)' }}
+                        src="http://localhost:8000/api/icon/MineralField"
+                        title={`minerals (rate: ${formatSigned(currentStats?.mineralsCollectionRate || 0)})`}
+                    />
+                    <div>{currentStats?.mineralsCurrent}</div>
+                </div>
+                <div className="flex space-x-2 items-center rounded bg-gray-200 px-1 py-0.5 text-gray-800 text-sm">
+                    <img
+                        className="h-5"
+                        style={{ filter: 'sepia(100%) hue-rotate(100deg) saturate(1.3) brightness(1.1)' }}
+                        src="http://localhost:8000/api/icon/VespeneGeyser"
+                        title={`vespene gas (rate: ${formatSigned(currentStats?.vespeneCollectionRate || 0)})`}
+                    />
+                    <div>{currentStats?.vespeneCurrent}</div>
+                </div>
+                <div className="flex space-x-2 items-center rounded bg-gray-200 px-1 py-0.5 text-gray-800 text-sm">
+                    <img className="h-5" src={`http://localhost:8000/api/icon/${supplyIcon}`} title="supply" />
+                    <div>
+                        {(currentStats?.foodUsed || 0) / 4096}/{(currentStats?.foodMade || 0) / 4096}
+                    </div>
+                </div>
+            </div>
+            <div ref={ref} className="w-full relative" style={{ height: timelineHeight }}>
+                <div
+                    className={classnames('absolute top-1/2 w-1/2 border border-gray-200 border-dashed', {
+                        'w-full': !props.live,
+                        'w-1/2': props.live,
+                    })}
+                />
+                <div
+                    className={classnames(
+                        'absolute left-1/2 h-full bg-gradient-to-b from-transparent via-gray-100 to-transparent w-1 transform -translate-x-1/2',
+                        { 'via-gray-200': props.live }
+                    )}
+                />
+                <div
+                    className={classnames('absolute right-0 h-full w-1/2', { hidden: !props.live })}
+                    style={{
+                        backgroundImage: `
                         linear-gradient(to left, white, transparent 70%),
                         linear-gradient(to bottom, white, transparent 70%),
                         linear-gradient(to top, white, transparent 70%),
                         repeating-linear-gradient(70deg, transparent, transparent 10px, rgba(202,236,190,0.3) 20px, rgba(232,236,241,0.1) 20px)
                     `,
-                }}
-            />
-            <div className="absolute left-0 top-1/2">
-                <div className="transform -translate-y-1/2 text-xs text-gray-500 relative h-4">{ticks}</div>
+                    }}
+                />
+                <div className="absolute left-0 top-1/2">
+                    <div className="transform -translate-y-1/2 text-xs text-gray-500 relative h-4">{ticks}</div>
+                </div>
+                {bins}
             </div>
-            {bins}
         </div>
     );
 };
