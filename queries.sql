@@ -20,11 +20,12 @@ select
     other.playerid,
     EUCLIDEAN_DISTANCE(game.vec, other.vec) dist
 from
-    compvec(3000) as game,
-    compvec(3000) as other
-where game.gameid = -5853559066988924600 and game.playerid = 1
-order by dist asc
-limit 10;
+    compvec(6818-2400, 6818) as game,
+    compvec(7200-2400, 7200) as other
+where
+    game.gameid = 9202580199611447025 and game.playerid = 2
+    and other.gameid in (7244131768046794628, 7244131768046794628, 8437888827081805491)
+order by dist asc;
 
 select
     other.gameid,

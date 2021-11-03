@@ -11,6 +11,8 @@ import { useFetch, formatSeconds } from './util';
 import classNames from 'classnames';
 import { useEffect } from 'react';
 
+import { LOOPS_PER_SEC } from './const';
+
 import { initialState, reduceState, SimilarGame } from './ReplayState';
 
 const HeaderCell = memo(
@@ -33,7 +35,7 @@ const Replay: React.FC = () => {
     const replay = useFetch<ReplayMeta>(`api/replays/${gameid}`);
     const timeline = useFetch(`api/replays/${gameid}/timeline`, loadTimeline);
 
-    useInterval(() => dispatch({ type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / 16, true);
+    useInterval(() => dispatch({ type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / LOOPS_PER_SEC, true);
 
     const playerEvents = timeline ? timeline[state.player].events : [];
     const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
@@ -48,7 +50,7 @@ const Replay: React.FC = () => {
         const loop = state.loop;
         const params = new URLSearchParams({
             playerid: state.player.toString(),
-            loop: loop.toString(),
+            loop: Math.round(loop).toString(),
             lag: '2400',
             limit: '5',
         });
@@ -74,8 +76,30 @@ const Replay: React.FC = () => {
         return <h1>Loading...</h1>;
     }
 
+    let yt = null;
+    if (replay?.gameid === '-5280689129783593904') {
+        yt = (
+            <iframe
+                width="560"
+                height="315"
+                src="https://www.youtube.com/embed/7Ry_B3RZQ4M?enablejsapi=1&controls=1&rel=0"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                    position: 'fixed',
+                    right: '10px',
+                    top: '110px',
+                    zIndex: 9999,
+                }}
+            ></iframe>
+        );
+    }
+
     return (
         <>
+            {yt}
             <Header>
                 <div className="flex">
                     <div className="pr-4 mr-4 border-r-2 border-gray-100">
@@ -111,7 +135,7 @@ const Replay: React.FC = () => {
                     <div className="self-center mr-2 text-gray-400 h-6 cursor-pointer hover:text-indigo-400">
                         <RewindIcon
                             className="inline h-6 text-gray-400 hover:text-indigo-400"
-                            onClick={() => dispatch({ type: 'skip', amt: -16 * 15, maxLoops: replay.loops })}
+                            onClick={() => dispatch({ type: 'skip', amt: -LOOPS_PER_SEC * 15, maxLoops: replay.loops })}
                         />
                         {state.running ? (
                             <PauseIcon
@@ -130,11 +154,11 @@ const Replay: React.FC = () => {
                         />
                         <FastForwardIcon
                             className="inline h-6 text-gray-400 hover:text-indigo-400"
-                            onClick={() => dispatch({ type: 'skip', amt: 16 * 15, maxLoops: replay.loops })}
+                            onClick={() => dispatch({ type: 'skip', amt: LOOPS_PER_SEC * 15, maxLoops: replay.loops })}
                         />
                     </div>
                     <HeaderCell k="game time" title={`${state.loop}`}>
-                        <span className="select-none">{formatSeconds(state.loop / 16)}</span>
+                        <span className="select-none">{formatSeconds(state.loop / LOOPS_PER_SEC)}</span>
                     </HeaderCell>
                 </div>
             </Header>

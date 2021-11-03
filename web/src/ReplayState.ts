@@ -1,3 +1,5 @@
+import { LOOPS_PER_SEC } from './const';
+
 export type SimilarGame = {
     gameid: string;
     playerid: 1 | 2;
@@ -28,6 +30,14 @@ export const initialState = (): State => ({
     similar: [],
 });
 
+const controlYT = (func: string, ...args: any[]) => {
+    document
+        ?.querySelector('iframe')
+        ?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+};
+
+const YTOFFSET = 2;
+
 export const reduceState = (state: State, action: Action) => {
     switch (action.type) {
         case 'select-player':
@@ -36,11 +46,23 @@ export const reduceState = (state: State, action: Action) => {
                 player: action.player,
             };
         case 'start':
+            let loop = state.loop;
+            if (loop === 0) {
+                loop = LOOPS_PER_SEC * YTOFFSET;
+            }
+
+            controlYT('playVideo');
+            controlYT('seekTo', loop / LOOPS_PER_SEC - YTOFFSET, true);
+
             return {
                 ...state,
+                loop,
                 running: true,
             };
         case 'stop':
+            controlYT('pauseVideo');
+            controlYT('seekTo', 0, true);
+
             return {
                 ...state,
                 running: false,
@@ -53,14 +75,19 @@ export const reduceState = (state: State, action: Action) => {
             }
             return state;
         case 'pause':
+            controlYT('pauseVideo');
+
             return {
                 ...state,
                 running: false,
             };
         case 'skip':
+            let newloop = Math.max(0, state.loop + action.amt);
+            controlYT('seekTo', newloop / LOOPS_PER_SEC - YTOFFSET, true);
+
             return {
                 ...state,
-                loop: Math.min(action.maxLoops, Math.max(0, state.loop + action.amt)),
+                loop: Math.min(action.maxLoops, newloop),
             };
         case 'similar':
             return {

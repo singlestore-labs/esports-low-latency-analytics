@@ -123,7 +123,7 @@ func (s *ReplayServer) ListReplays(c *gin.Context) {
 				or p1.name like concat("%",:player,"%")
 				or p2.name like concat("%",:player,"%")
 			)
-		order by games.gameid desc
+		order by if(games.gameid = -5280689129783593904, NULL, games.gameid) desc nulls first
 		limit :limit
 	`, params)
 	if err != nil {

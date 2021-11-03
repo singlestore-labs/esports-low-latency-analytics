@@ -8,6 +8,8 @@ import * as d3array from 'd3-array';
 import { loadTimeline, ReplayEvent, ReplayMeta } from './models';
 import { useFetch, formatSeconds, formatSigned } from './util';
 
+import { LOOPS_PER_SEC, LOOPS_PER_MIN } from './const';
+
 type Props = {
     gameID: string;
     player: 1 | 2;
@@ -16,8 +18,6 @@ type Props = {
 };
 
 const timelineHeight = 200;
-const loopsPerSecond = 16;
-const loopsPerMinute = loopsPerSecond * 60;
 
 const raceToSupplyIcon = {
     Terran: 'SupplyDepot',
@@ -36,7 +36,7 @@ const Tickmark = memo(({ tick, left, now }: { tick: number; left: number; now: n
         )}
         style={{ left }}
     >
-        {tick === 0 ? formatSeconds(now / loopsPerSecond, false) : formatSeconds(tick / loopsPerSecond, true)}
+        {tick === 0 ? formatSeconds(now / LOOPS_PER_SEC, false) : formatSeconds(tick / LOOPS_PER_SEC, true)}
     </div>
 ));
 
@@ -52,7 +52,7 @@ const Timeline: React.FC<Props> = (props: Props) => {
     }
     const { events, stats } = state[props.player];
 
-    const loopRadius = loopsPerMinute * (width > 2000 ? 6 : 2);
+    const loopRadius = LOOPS_PER_MIN * (width > 2000 ? 6 : 2);
     const minLoop = props.loop - loopRadius;
     const maxLoop = props.loop + loopRadius;
 

@@ -29,29 +29,20 @@ The compvecs table is a prebuilt result of all of the games. This produces a Sin
 
 On the home screen, each card represents a unique StartCraft 2 replay from professional players.
 
-1.  Select Map: Catalyst Zest (Protoss) vs Impact (Zerg)
+1.  Select the first game on the homescreen: Zest (Protoss) vs Reynor (Zerg)
 1.  Hit the play button in the top-right hand corner.
     The first timeline at the top represents a live game in realtime. We are monitoring for new events.
     The timelines below this one are similar games that match the realtime match's build composition.
 
     To start, almost every Protoss player will create the same initial
-    units. The first fork begins at about **1m40s**.
+    units. The first fork begins at about **2m30s**.
 
-    In this match, we can see two possible forks. The Protoss player may aim for an
-    early Forge which might lead to a Photon Cannon Rush or an Assimilator.
+    In this match, we can see two possible forks. The Protoss player may aim for building stalkers, going for a mothership, or getting an early stargate.
 
     This game is about managing resources. A building unit consumes resources of crystals and gas.
     How those resources are allocated is key to late game strategies.
 
-    In this case, the player has chosen an assimilator. As soon as the assimilator has been chosen, this eliminated the early forge strategy. Notice how the timelines have changed.
-1.  A commentator might ask something like "When will the player make their Gateway?"
-    or "Will there be a second early assimilator?"
-    No. We see that this is a very standard Gateway build.
-    Next choices include building an assimilator before building Adepts (a warrior type).
-1.  At **3m13s**, checkout that we found a previous game from the same player.
-    It's very informative to see a given player's past strategies.
-    This system is very effective at predicting what happens next.
-1.  Look for the potential of a Stargate at **4m10s**.
+    In this case, the player has chosen a stargate. As soon as the stargate has been chosen, this eliminated the other strategies. Notice how the timelines have changed.
 
 As we can see, a commentator can look at this dashboard with specific context and provide
 informative commentatory for things the audience can look for.
@@ -62,7 +53,7 @@ With additional features, we could even have a fully automated commentator.
 
 All of this data is simulated.
 
-Per event we compute <60ms
+Per event we compute <60ms (assuming correctly sized SingleStore cluster)
 k-nearest neighbor search of 20
 million build composition vectors.
 Each one of those vectors, is a small window of one of the 10,000 games
