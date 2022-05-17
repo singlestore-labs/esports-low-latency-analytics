@@ -1,3 +1,8 @@
+CREATE DATABASE sc2;
+USE sc2;
+
+CREATE LINK aws_s3 AS S3 CREDENTIALS '{}' CONFIG '{ "region": "us-east-1" }';
+
 CREATE ROWSTORE TABLE games (
     gameID BIGINT PRIMARY KEY NOT NULL,
     filename TEXT NOT NULL,

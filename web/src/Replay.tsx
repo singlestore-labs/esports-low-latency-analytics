@@ -1,19 +1,18 @@
-import React, { useReducer, memo, useState } from 'react';
-import { useParams } from 'react-router';
-import { useInterval } from 'rooks';
-import * as d3array from 'd3-array';
-
-import { PlayIcon, StopIcon, PauseIcon, FastForwardIcon, RewindIcon } from '@heroicons/react/solid';
-import { ReplayMeta, ReplayEvent, loadTimeline } from './models';
-import Header from './Header';
-import Timeline from './Timeline';
-import { useFetch, formatSeconds } from './util';
+import { FastForwardIcon, PauseIcon, PlayIcon, RewindIcon, StopIcon } from '@heroicons/react/solid';
 import classNames from 'classnames';
-import { useEffect } from 'react';
-
+import * as d3array from 'd3-array';
+import React, { memo, useEffect, useReducer } from 'react';
+import { useParams } from 'react-router';
+import { useIntervalWhen } from 'rooks';
 import { LOOPS_PER_SEC } from './const';
-
+import Header from './Header';
+import { loadTimeline, ReplayEvent, ReplayMeta } from './models';
 import { initialState, reduceState, SimilarGame } from './ReplayState';
+import Timeline from './Timeline';
+import { formatSeconds, useFetch } from './util';
+
+
+
 
 const HeaderCell = memo(
     ({
@@ -35,7 +34,7 @@ const Replay: React.FC = () => {
     const replay = useFetch<ReplayMeta>(`api/replays/${gameid}`);
     const timeline = useFetch(`api/replays/${gameid}/timeline`, loadTimeline);
 
-    useInterval(() => dispatch({ type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / LOOPS_PER_SEC, true);
+    useIntervalWhen(() => dispatch( { type: 'tick', maxLoops: replay?.loops || Infinity }), 1000 / LOOPS_PER_SEC, true, true);
 
     const playerEvents = timeline ? timeline[state.player].events : [];
     const bisector = d3array.bisector((e: ReplayEvent) => e.loopid);
