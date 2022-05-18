@@ -10,14 +10,6 @@ In order to display high quality analytics, we need real data. The data set incl
 
 StarCraft 2 (SC2) is a realtime strategy (RTS) video game developed and published by Blizzard Entertainment with esports matches beginning in 2010. SC2 has a large community and several professional leagues.  There are three races with unique units and strategies: terran, zerg, protoss. The goal of each match is to destroy all of the opponents buildings or create a situation where there is no chance of winning and the opponent forfeits.
 
-## Analytics
-
-We have a “buildcomp“ table, short for build composition. For each game, for each player, in one game loop (1/16th of second). We are looking for the kind and number of units, e.g. kind = zergling, num = 1.
-
-Buildcomp reflects the delta of the kinds of events that are occurring.
-
-The compvecs table is a prebuilt result of all of the games. This produces a SingleStore floating point vector that reflects the composition at that point.
-
 # Run the demo yourself!
 
 This project is easy to run and I encourage you to play with it a bit. Once you get it setup you can easily add additional commands or play with different ways to optimize the queries or schema. Let's get started!
@@ -102,9 +94,17 @@ informative commentatory for things the audience can look for.
 
 With additional features, we could even have a fully automated commentator.
 
-## Technical details
+# Details
 
-All of this data is simulated.
+## Analytics
+
+We have a “buildcomp“ table, short for build composition. For each game, for each player, in one game loop (1/16th of second). We are looking for the kind and number of units, e.g. kind = zergling, num = 1.
+
+Buildcomp reflects the delta of the kinds of events that are occurring.
+
+The compvecs table is a prebuilt result of all of the games. This produces a SingleStore floating point vector that reflects the composition at that point.
+
+## Searching
 
 Per event we compute <60ms (assuming correctly sized SingleStore cluster)
 k-nearest neighbor search of 20

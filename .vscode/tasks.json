@@ -1,100 +1,46 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "shell",
-			"label": "build: processor",
-			"group": "build",
-			"options": {
-				"cwd": "${workspaceFolder}/src"
-			},
-			"command": "go",
-			"args": [
-				"build",
-				"-o",
-				"bin/processor/__bin",
-				"bin/processor/main.go",
-			],
-			"problemMatcher": [
-				"$go"
-			]
-		},
-		{
-			"type": "shell",
-			"label": "build: player",
-			"group": "build",
-			"options": {
-				"cwd": "${workspaceFolder}/src"
-			},
-			"command": "go",
-			"args": [
-				"build",
-				"-o",
-				"bin/player/__bin",
-				"bin/player/main.go",
-			],
-			"problemMatcher": [
-				"$go"
-			]
-		},
-		{
-			"dependsOn": [
-				"build: processor",
-			],
-			"type": "shell",
-			"label": "start: processor",
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"command": "src/bin/processor/__bin",
-			"args": [
-				"--config",
-				"${workspaceFolder}/config.example.toml",
-				"--config",
-				"${workspaceFolder}/config.toml",
-			],
-			"problemMatcher": [
-				"$go"
-			]
-		},
-		{
-			"dependsOn": [
-				"build: player",
-			],
-			"type": "shell",
-			"label": "start: player",
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"command": "src/bin/player/__bin",
-			"args": [
-				"--config",
-				"${workspaceFolder}/config.example.toml",
-				"--config",
-				"${workspaceFolder}/config.toml",
-			],
-			"problemMatcher": [
-				"$go"
-			]
-		},
-		{
-			"type": "shell",
-			"label": "start: ui",
-			"options": {
-				"cwd": "${workspaceFolder}/web",
-			},
-			"command": "yarn dev",
-			"problemMatcher": [
-				"$tsc"
-			]
-		},
-		{
-			"label": "start all",
-			"dependsOn": [
-				"start: ui",
-				"start: player"
-			],
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "build: player",
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/src"
+      },
+      "command": "go",
+      "args": ["build", "-o", "bin/player/__bin", "bin/player/main.go"],
+      "problemMatcher": ["$go"]
+    },
+    {
+      "dependsOn": ["build: player"],
+      "type": "shell",
+      "label": "start: player",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "command": "src/bin/player/__bin",
+      "args": [
+        "--config",
+        "${workspaceFolder}/config.example.toml",
+        "--config",
+        "${workspaceFolder}/config.toml"
+      ],
+      "problemMatcher": ["$go"]
+    },
+    {
+      "type": "shell",
+      "label": "start: ui",
+      "options": {
+        "cwd": "${workspaceFolder}/web"
+      },
+      "command": "yarn dev",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "start all",
+      "dependsOn": ["start: ui", "start: player"],
+      "problemMatcher": []
+    }
+  ]
 }
