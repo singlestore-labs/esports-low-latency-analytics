@@ -36,7 +36,7 @@ const controlYT = (func: string, ...args: any[]) => {
         ?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
 };
 
-const YTOFFSET = 2;
+const YTOFFSET = 3.8;
 
 export const reduceState = (state: State, action: Action) => {
     switch (action.type) {
