@@ -1,5 +1,7 @@
 # Reference architecture using SingleStore for realtime esports analytics
 
+**Attention**: The code in this repository is intended for experimental use only and is not fully tested, documented, or supported by SingleStore. Visit the [SingleStore Forums](https://www.singlestore.com/forum/) to ask questions about this repository.
+
 The goal of this reference architecture is to build an esports dashboard displaying low-latency analytics for commentators.
 
 ## Background
